@@ -7,7 +7,8 @@ const cors = require("cors");
 const app = express();
 dotenv.config();
 
-const frontendUrl = process.env.ENV === "Production" ? process.env.PRODUCTION_URL : process.env.DEV_URL;
+const frontendUrl = process.env.ENV === "Production" ? process.env.PRODUCTION_CLIENT_URL : process.env.DEV_CLIENT_URL;
+const backendUrl = process.env.ENV === "Production" ? process.env.PRODUCTION_SERVER_URL : process.env.DEV_SERVER_URL
 
 app.use(express.json());
 app.use(cors({
@@ -30,7 +31,7 @@ const configObject = {
 		google: {
 			clientId: process.env.GOOGLE_CLIENT_ID,
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-			redirectUri: frontendUrl + "/",
+			redirectUri: backendUrl,
 			scope: "email profile openid",
 			serverEndPoint: "/auth",
 		},

@@ -2,15 +2,18 @@ import React, { useEffect, useMemo } from "react";
 import * as anyAuth from "any-auth";
 import "./App.css";
 
+const frontendUrl = process.env.ENV === "Production" ? process.env.REACT_APP_CLIENT_URL : process.env.REACT_APP_DEV_CLIENT_URL;
+const backendUrl = process.env.ENV === "Production" ? process.env.REACT_APP_SERVER_URL : process.env.REACT_APP_DEV_SERVER_URL;
+
 export default function App() {
 	const configObject = useMemo(() => {
 		return {
-			serverUrl: process.env.REACT_APP_SERVER_URL,
+			serverUrl: backendUrl,
 			providers: {
 				google: {
 					clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
 					clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
-					redirectUri: process.env.REACT_APP_CLIENT_URL,
+					redirectUri: frontendUrl,
 					scope: "email profile openid",
 					serverEndPoint: "/auth",
 				},
