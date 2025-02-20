@@ -33,7 +33,7 @@ const configObject = {
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 			redirectUri: backendUrl,
 			scope: "email profile openid",
-			serverEndPoint: "/auth",
+			serverEndPoint: "auth",
 		},
 	}
 }

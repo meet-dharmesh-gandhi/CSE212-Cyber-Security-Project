@@ -15,7 +15,7 @@ export default function App() {
 					clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
 					redirectUri: frontendUrl,
 					scope: "email profile openid",
-					serverEndPoint: "/auth",
+					serverEndPoint: "auth",
 				},
 			}
 		}
