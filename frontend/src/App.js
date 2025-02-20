@@ -2,8 +2,8 @@ import React, { useEffect, useMemo } from "react";
 import * as anyAuth from "any-auth";
 import "./App.css";
 
-const frontendUrl = process.env.ENV === "Production" ? process.env.REACT_APP_CLIENT_URL : process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl = process.env.ENV === "Production" ? process.env.REACT_APP_SERVER_URL : process.env.REACT_APP_DEV_SERVER_URL;
+const frontendUrl = process.env.REACT_APP_ENV === "Production" ? process.env.REACT_APP_CLIENT_URL : process.env.REACT_APP_DEV_CLIENT_URL;
+const backendUrl = process.env.REACT_APP_ENV === "Production" ? process.env.REACT_APP_SERVER_URL : process.env.REACT_APP_DEV_SERVER_URL;
 
 export default function App() {
 	const configObject = useMemo(() => {
@@ -22,6 +22,7 @@ export default function App() {
 	}, []);
 
 	useEffect(() => {
+		console.log(frontendUrl, backendUrl);
 		anyAuth.setConfig(configObject, {});
 		(async () => {
 			const response = await anyAuth.handleOAuthRedirect();
