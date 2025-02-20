@@ -1,0 +1,88 @@
+body {
+	--bg: #ffffff;
+	--gap: 0px;
+	--color: #ffffff;
+	--margin: 10px;
+	--padding: 10px;
+	--b-r: 5px;
+	--w: auto;
+	--h: auto
+}
+
+.flex {
+	display: flex;
+}
+
+.fx-col {
+	flex-direction: column;
+}
+
+.justify {
+	justify-content: center;
+}
+
+.align {
+	align-items: center;
+}
+
+.b-r {
+	border-radius: var(--b-r);
+}
+
+.margin {
+	margin: var(--margin);
+}
+
+.padding {
+	padding: var(--padding);
+}
+
+.gap {
+	gap: var(--gap);
+}
+
+.gap-col {
+	column-gap: var(--gap);
+}
+
+.gap-row {
+	row-gap: var(--gap);
+}
+
+.bg {
+	background-color: var(--bg);
+}
+
+.font-color {
+	color: var(--color);
+}
+
+.defaults {
+	box-sizing: border-box;
+	margin: 0;
+	border: 0;
+}
+
+.w {
+	width: var(--w);
+}
+
+.h {
+	height: var(--h);
+}
+
+.w100 {
+	width: 100%;
+}
+
+.h100 {
+	height: 100%;
+}
+
+.w100vw {
+	width: 100vw;
+}
+
+.h100vh {
+	height: 100vh;
+}
