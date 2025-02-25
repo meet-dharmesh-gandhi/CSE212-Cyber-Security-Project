@@ -26,7 +26,7 @@ const port = 9000;
 
 
 const configObject = {
-	serverUrl: frontendUrl,
+	serverUrl: frontendUrl + "/",
 	providers: {
 		google: {
 			clientId: process.env.GOOGLE_CLIENT_ID,
