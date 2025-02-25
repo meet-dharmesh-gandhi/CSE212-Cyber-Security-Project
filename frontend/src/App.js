@@ -22,7 +22,6 @@ export default function App() {
 	}, []);
 
 	useEffect(() => {
-		console.log(frontendUrl, backendUrl);
 		anyAuth.setConfig(configObject, {});
 		(async () => {
 			const response = await anyAuth.handleOAuthRedirect();
