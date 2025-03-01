@@ -1,12 +1,51 @@
 body {
 	--bg: #ffffff;
+	--bg-blr: 0px;
 	--gap: 0px;
 	--color: #ffffff;
 	--margin: 10px;
 	--padding: 10px;
 	--b-r: 5px;
 	--w: auto;
-	--h: auto
+	--h: auto;
+	--br-c: #000000;
+	--br-w: 1px;
+	--br-s: solid;
+	--fs: medium;
+}
+
+.tr-x {
+	transform: translateX(var(--tr-x));
+}
+
+.tr-y {
+	transform: translateY(var(--tr-y));
+}
+
+.tr-z {
+	transform: translateZ(var(--tr-z));
+}
+
+.fs {
+	font-size: var(--fs);
+}
+
+.pa {
+	position: absolute;
+	top: var(--pa-t);
+	left: var(--pa-l);
+	right: var(--pa-r);
+	bottom: var(--pa-b);
+}
+
+.pr {
+	position: relative;
+}
+
+.br {
+	border-color: var(--br-c);
+	border-width: var(--br-w);
+	border-style: var(--br-s);
 }
 
 .flex {
@@ -51,6 +90,7 @@ body {
 
 .bg {
 	background-color: var(--bg);
+	backdrop-filter: blur(var(--bg-blr));
 }
 
 .font-color {
@@ -85,4 +125,11 @@ body {
 
 .h100vh {
 	height: 100vh;
+}
+
+body {
+	background-image: url("./Images/headers-sectors-cybersecurity.webp");
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: 50%;
 }
