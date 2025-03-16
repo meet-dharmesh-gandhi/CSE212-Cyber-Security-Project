@@ -99,7 +99,6 @@ function createCookieSettings(secure, currentSite, expiresIn = 15 * 60 * 1000) {
 		// signed: true,
 		sameSite: secure ? "None" : "lax",
 		maxAge: expiresIn,
-		...(currentSite === "localhost" ? {} : { domain: currentSite }),
 	};
 }
 
