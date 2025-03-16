@@ -4,6 +4,8 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "nodemon server.js",
+		"build": "npm i",
+		"serve": "node server.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],
