@@ -4,15 +4,35 @@ const crypto = require("crypto");
 const anyAuth = require("any-auth");
 const cors = require("cors");
 const db = require("./Database/db.js");
-const fs = require("fs");
-const { ServerError, DatabaseQueryError } = require("./Errors/Errors.js");
+const {
+	ServerError,
+	DatabaseQueryError,
+	UserCredentialsValidationError,
+} = require("./Errors/Errors.js");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const nodemailer = require("nodemailer");
+const {
+	sendEmail,
+	getIpAddress,
+	decodeIncomingData,
+	SHA256Hash,
+	createJWT,
+	createCookieSettings,
+	RSADecryptMiddleware,
+} = require("./Functions/utility-functions.js");
 
 const app = express();
 dotenv.config();
 db.connectToMongoDB();
 
+const transporter = nodemailer.createTransport({
+	service: "gmail",
+	auth: {
+		user: "someoneidontknow121@gmail.com",
+		pass: "hyit kgjl iavt qehi",
+	},
+});
 const frontendUrl =
 	process.env.ENV === "Production"
 		? process.env.PRODUCTION_CLIENT_URL
@@ -27,12 +47,21 @@ if (!JWT_SECRET_KEY) throw new ServerError("Could not find JWT_SECRET_KEY");
 app.use(express.json());
 app.use(
 	cors({
-		origin: [frontendUrl],
+		origin: [
+			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/"),
+			frontendUrl.endsWith("/")
+				? frontendUrl.slice(0, frontendUrl.length - 1)
+				: frontendUrl,
+		],
+		credentials: true,
 	})
 );
 app.use(cookieParser());
+app.use(RSADecryptMiddleware);
 
 const port = 9000;
+const requireInfo = ["username", "password", "email", "name"];
+const debug = !(process.env.ENV === "Production");
 
 //=============================
 //=============================
@@ -57,80 +86,280 @@ const configObject = {
 
 anyAuth.setConfig(configObject, crypto);
 
-app.get("/", (req, res) => res.send("Welcome to the server!"));
+app.all("/", (req, res) => res.send("Welcome to the server!"));
+
+app.get("/view-cookies", async (req, res) => {
+	if (debug) console.log(req.cookies);
+	res.sendStatus(200);
+});
+
+app.post("/set-cookies", async (req, res) => {
+	res.cookie("test-cookie", req.body.value ?? "test-value");
+	res.sendStatus(200);
+});
 
 app.post("/get-user", async (req, res) => {
 	try {
 		let { data } = req.body;
-		data = decodeURIComponent(data);
-		if (!/^[A-Za-z0-9+/=]+$/.test(data)) {
-			throw new ServerError("Invalid Base64 format received!");
-		}
-		// console.log("data:", data, typeof data);
-		const encryptedData = Buffer.from(data, "base64");
-		// console.log("encryptedData:", encryptedData);
-		// console.log("PRIVATE_KEY:", process.env.PRIVATE_KEY);
-		const decryptedData = crypto.privateDecrypt(
-			{
-				key: process.env.PRIVATE_KEY,
-				oaepHash: "sha256",
-				padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-			},
-			encryptedData
-		);
-		// console.log("decryptedData:", decryptedData);
-		const creds = decryptedData.toString("utf8");
+		if (debug) console.log(data);
 		let [username, password] = [];
 		try {
-			[username, password] = JSON.parse(creds);
+			[username, password] = JSON.parse(data);
 		} catch (error) {
 			console.error("Invalid JSON Object:", error);
 			throw new ServerError("Could not retrieve the credentials sent!");
 		}
-		// console.log(password);
-		password = crypto.createHash("sha512").update(password).digest("hex");
-		// console.log(username, password);
+		password = SHA256Hash(password);
 		try {
 			const result = await db.getUser(username, password);
 			if (result.status === "OK" && result.data === "User Exists!") {
-				// cookie(name: string, val: string, options: CookieOptions): Response<any, Record<string, any>, number>
-
-				// Set cookie name to val, with the given options.
-
-				// Options:
-
-				// maxAge max-age in milliseconds, converted to expires
-				// signed sign the cookie
-				// path defaults to "/"
-				const token = jwt.sign(
-					{ username: result.username },
-					JWT_SECRET_KEY,
-					{
-						expiresIn: "1h",
-					}
+				const token = createJWT(result.username, frontendUrl);
+				res.cookie(
+					"authToken",
+					token,
+					createCookieSettings(
+						process.env.ENV === "Production",
+						new URL(frontendUrl).hostname
+					)
 				);
-				res.cookie("authToken", token, {
-					httpOnly: true,
-					secure: process.env.ENV === "Production" ? true : false,
-					sameSite: "strict",
-					maxAge: 3 * 60 * 60 * 1000,
+				return res.status(200).send({
+					status: "success",
+					data: result.username,
+					exists: true,
 				});
-				return res.json({ data: result.username });
-			} else {
-				throw new ServerError("Unknown Error Occurred!");
+			} else if (result.status === "OK") {
+				return res.status(500).send({
+					status: "error",
+					data: "User does not exist",
+					exists: false,
+				});
 			}
 		} catch (error) {
 			throw new DatabaseQueryError(
-				"Unknown error while fetching user in Database!"
+				error.message ??
+					"Unknown error while fetching user in Database!",
+				error.statusCode
 			);
 		}
 	} catch (error) {
 		console.error("/get-user:", error);
-		res.status(500).json({ status: "ERROR", data: error.message });
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
 	}
 });
 
-app.post("/add-user", async (req, res) => {});
+app.post("/add-user", async (req, res) => {
+	try {
+		let { data } = req.body;
+		if (debug) console.log(data);
+		let username, password, email;
+		try {
+			[username, password, email] = JSON.parse(data);
+			if (!username || !password || !email) {
+				console.error("sign up params missing!", [
+					...(!username ? ["username"] : []),
+					...(!password ? ["password"] : []),
+					...(!email ? ["email"] : []),
+				]);
+				throw new UserCredentialsValidationError(
+					"Important sign up parameters are missing!",
+					400,
+					undefined,
+					[
+						...(!username ? ["username"] : []),
+						...(!password ? ["password"] : []),
+						...(!email ? ["email"] : []),
+					]
+				);
+			}
+		} catch (error) {
+			console.error("Invalid JSON Object:", error);
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		password = SHA256Hash(password);
+		try {
+			const added = await db.addUser(username, password, email);
+			if (added.status === "OK" && added.data === "User Added!") {
+				const token = createJWT(username, frontendUrl);
+				res.cookie(
+					"authToken",
+					token,
+					createCookieSettings(
+						process.env.ENV === "Production",
+						new URL(frontendUrl).hostname
+					)
+				);
+				return res.status(200).send({
+					status: "success",
+					data: "User added",
+					exists: false,
+					added: true,
+				});
+			} else {
+				return res.status(409).send({
+					status: "error",
+					data: "User Already Exists",
+					exists: true,
+					added: false,
+				});
+			}
+		} catch (error) {
+			throw new DatabaseQueryError(
+				error.message ??
+					"Unknown error while fetching user in Database: " + error,
+				error.statusCode ?? 500
+			);
+		}
+	} catch (error) {
+		console.error("/get-user:", error);
+		return res.status(error.statusCode).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+			added: false,
+		});
+	}
+});
+
+app.post("/get-user-via-email", async (req, res) => {
+	try {
+		let { data } = req.body;
+		if (debug) console.log(data);
+		let [email] = [];
+		try {
+			[email] = JSON.parse(data);
+		} catch (error) {
+			console.error("Invalid JSON Object:", error);
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		try {
+			const result = await db.getUserViaEmail(email);
+			if (result.status === "OK" && result.data === "User Exists!") {
+				const token = createJWT(result.username, frontendUrl);
+				res.cookie(
+					"authToken",
+					token,
+					createCookieSettings(
+						process.env.ENV === "Production",
+						new URL(frontendUrl).hostname
+					)
+				);
+				return res.status(200).send({
+					status: "success",
+					data: result.username,
+					exists: true,
+				});
+			} else if (result.status === "OK") {
+				return res.status(500).send({
+					status: "error",
+					data: "User does not exist",
+					exists: false,
+				});
+			}
+		} catch (error) {
+			throw new DatabaseQueryError(
+				error.message ??
+					"Unknown error while fetching user in Database!",
+				error.statusCode
+			);
+		}
+	} catch (error) {
+		console.error("/get-user-via-email:", error);
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
+	}
+});
+
+app.post("/add-user-via-email", async (req, res) => {
+	// try {
+	// 	let { data } = req.body;
+	// 	if (debug) console.log(data);
+	// 	let username, password, email;
+	// 	try {
+	// 		[username, password, email] = JSON.parse(data);
+	// 		if (!username || !password || !email) {
+	// 			console.error("sign up params missing!", [
+	// 				...(!username ? ["username"] : []),
+	// 				...(!password ? ["password"] : []),
+	// 				...(!email ? ["email"] : []),
+	// 			]);
+	// 			throw new UserCredentialsValidationError(
+	// 				"Important sign up parameters are missing!",
+	// 				400,
+	// 				undefined,
+	// 				[
+	// 					...(!username ? ["username"] : []),
+	// 					...(!password ? ["password"] : []),
+	// 					...(!email ? ["email"] : []),
+	// 				]
+	// 			);
+	// 		}
+	// 	} catch (error) {
+	// 		console.error("Invalid JSON Object:", error);
+	// 		throw new ServerError("Could not retrieve the credentials sent!");
+	// 	}
+	// 	password = SHA256Hash(password);
+	// 	try {
+	// 		const added = await db.addUser(username, password, email);
+	// 		if (added.status === "OK" && added.data === "User Added!") {
+	// 			const token = createJWT(username, frontendUrl);
+	// 			res.cookie(
+	// 				"authToken",
+	// 				token,
+	// 				createCookieSettings(
+	// 					process.env.ENV === "Production",
+	// 					new URL(frontendUrl).hostname
+	// 				)
+	// 			);
+	// 			return res.status(200).send({
+	// 				status: "success",
+	// 				data: "User added",
+	// 				exists: false,
+	// 				added: true,
+	// 			});
+	// 		} else {
+	// 			return res.status(409).send({
+	// 				status: "error",
+	// 				data: "User Already Exists",
+	// 				exists: true,
+	// 				added: false,
+	// 			});
+	// 		}
+	// 	} catch (error) {
+	// 		throw new DatabaseQueryError(
+	// 			error.message ??
+	// 				"Unknown error while fetching user in Database: " + error,
+	// 			error.statusCode ?? 500
+	// 		);
+	// 	}
+	// } catch (error) {
+	// 	console.error("/get-user:", error);
+	// 	return res.status(error.statusCode).json({
+	// 		status: "error",
+	// 		data: error.message,
+	// 		exists: false,
+	// 		added: false,
+	// 	});
+	// }
+});
+
+app.get("/login", async (req, res) => {
+	const [ipStatusCode, ipData] = await getIpAddress(req, "8.8.8.8");
+	const [mailStatusCode, mailData] = await sendEmail(
+		transporter,
+		req.body.to || "meet.g1@ahduni.edu.in",
+		"someoneidontknow121@gmail.com"
+	);
+	res.status(ipStatusCode === 500 || mailStatusCode === 500 ? 500 : 200).send(
+		{ ipData, mailData }
+	);
+});
 
 app.post("/auth", async (req, res) =>
 	res.send(await anyAuth.getUser(req.body))

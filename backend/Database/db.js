@@ -9,6 +9,7 @@ const {
 	InvalidDatabaseEntryError,
 } = require("../Errors/Errors.js");
 // import mongoose from "mongoose";
+const debug = !(process.env.ENV === "Production");
 
 async function connectToMongoDB() {
 	await mongoose
@@ -29,8 +30,8 @@ async function connectToMongoDB() {
 		});
 }
 
-function addUser(username, passwordHash, email, name) {
-	if (!username || !passwordHash || !email || !name) {
+async function addUser(username, passwordHash, email) {
+	if (!username || !passwordHash || !email) {
 		throw new UserCredentialsValidationError(
 			"Important parameters missing for adding user in the database!",
 			undefined,
@@ -39,28 +40,37 @@ function addUser(username, passwordHash, email, name) {
 				...(!username ? [username] : []),
 				...(!passwordHash ? [passwordHash] : []),
 				...(!email ? [email] : []),
-				...(!name ? [name] : []),
 			])
 		);
 	}
 	try {
-		users.default.insertOne({
+		const userExists = await users.user.find({ username }).catch((err) => {
+			throw new DatabaseQueryError();
+		});
+		if (debug) console.log("userExists:", userExists);
+		if (userExists.length > 0) {
+			return { status: "error", data: "User Not Added!", added: false };
+		}
+		const added = await users.user.insertOne({
 			username,
 			passwordHash,
 			email,
-			name,
 		});
+		if (debug) console.log("new user added:", added);
+		return { status: "OK", data: "User Added!", added: true };
 	} catch (error) {
 		console.error("Error while adding user:\n", error);
-		throw new DatabaseQueryError("Error while adding user in database!");
+		throw new DatabaseQueryError(
+			error.message ?? "Error while adding user in database!",
+			error.statusCode ?? undefined
+		);
 	}
 }
 
 async function getUser(username, passwordHash) {
+	if (debug) console.log("username and password: ", username, passwordHash);
+
 	if (!username || !passwordHash) {
-		// throw new Error(
-		// 	"Important parameters missing for checking user in the database"
-		// );
 		throw new UserCredentialsValidationError(
 			"Important parameters missing for adding user in the database!",
 			undefined,
@@ -83,23 +93,86 @@ async function getUser(username, passwordHash) {
 					"Error while fetching user in database!"
 				);
 			});
-		// console.log(result + "\n\n\n" + typeof result);
+		if (debug)
+			console.log("result:", result, "\n\n", "type:", typeof result);
 		if (
-			Array.isArray(result) ||
-			(typeof result != "object" && Object.keys(result).length == 0)
+			(Array.isArray(result) && result.length > 0) ||
+			(typeof result === "object" && Object.keys(result).length > 0)
 		) {
-			throw new InvalidCredentialsError("Invalid Username or Password!");
-		} else {
-			const user = result[Object.keys(result)[0]];
-			if (!user.name)
+			const user =
+				result[Array.isArray(result) ? 0 : Object.keys(result)[0]];
+			if (!user.username)
 				throw new InvalidDatabaseEntryError(
-					"Name missing in the user entry!"
+					"Username missing in the user entry!"
 				);
-			return { status: "OK", data: "User Exists!", username: user.name };
+			return {
+				status: "OK",
+				data: "User Exists!",
+				username: user.username,
+			};
+		} else {
+			throw new InvalidCredentialsError(
+				"Invalid Username or Password!",
+				400
+			);
 		}
 	} catch (error) {
-		console.error("Error while adding user:\n", error);
-		throw new DatabaseQueryError("Error while fetching user in database!");
+		console.error("Error while getting user:\n", error);
+		throw new DatabaseQueryError(
+			error.message ?? "Error while fetching user in database!",
+			error.statusCode
+		);
+	}
+}
+
+async function getUserViaEmail(email) {
+	if (debug) console.log("email: ", email);
+
+	if (!email) {
+		throw new UserCredentialsValidationError(
+			"Important parameters missing for adding user in the database!",
+			undefined,
+			(cause = "Missing credentials"),
+			(InvalidCredentialsList = [...(!email ? [email] : [])])
+		);
+	}
+	try {
+		const result = await users.user
+			.find({
+				email,
+			})
+			.catch((err) => {
+				console.error("Error while checking for user in db:\n", err);
+				throw new DatabaseQueryError(
+					"Error while fetching user in database!"
+				);
+			});
+		if (debug)
+			console.log("result:", result, "\n\n", "type:", typeof result);
+		if (
+			(Array.isArray(result) && result.length > 0) ||
+			(typeof result === "object" && Object.keys(result).length > 0)
+		) {
+			const user =
+				result[Array.isArray(result) ? 0 : Object.keys(result)[0]];
+			if (!user.username)
+				throw new InvalidDatabaseEntryError(
+					"Username missing in the user entry!"
+				);
+			return {
+				status: "OK",
+				data: "User Exists!",
+				username: user.username,
+			};
+		} else {
+			throw new InvalidCredentialsError("Invalid Email!", 400);
+		}
+	} catch (error) {
+		console.error("Error while getting user:\n", error);
+		throw new DatabaseQueryError(
+			error.message ?? "Error while fetching user in database!",
+			error.statusCode
+		);
 	}
 }
 
@@ -107,4 +180,5 @@ module.exports = {
 	connectToMongoDB,
 	addUser,
 	getUser,
+	getUserViaEmail,
 };
