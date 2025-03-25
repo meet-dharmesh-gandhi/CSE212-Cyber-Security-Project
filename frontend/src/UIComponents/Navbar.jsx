@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Text, Menu, Portal, IconButton } from "@chakra-ui/react";
 import { HiDotsHorizontal } from "react-icons/hi";
+import { FaUserCog } from "react-icons/fa";
 
 const pages = [
 	["Reset Password Protection", "/password-protection"],
@@ -12,6 +13,18 @@ const pages = [
 
 export default function Navbar({ toSelect = 0 }) {
 	const [currentlySelected, setCurrentlySelected] = useState(toSelect);
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		const reqIndex =
+			window.location.pathname.toLowerCase() === "/home"
+				? 0
+				: pages.findIndex(
+						(ele) =>
+							ele[1].toLowerCase() === window.location.pathname
+				  );
+		setCurrentlySelected(reqIndex === -1 ? 4 : reqIndex);
+	}, [window.location.href]);
 
 	return (
 		<nav className="navbar w100vw">
@@ -31,7 +44,19 @@ export default function Navbar({ toSelect = 0 }) {
 						text={text}
 					/>
 				))}
-				<MoreButton />
+				{/* <MoreButton setCurrentlySelected={setCurrentlySelected} /> */}
+				<IconButton
+					bgColor={
+						currentlySelected === 4
+							? "brand.lightBlue"
+							: "transparent"
+					}
+					onClick={() => {
+						navigate("/view-profile");
+					}}
+				>
+					<FaUserCog color="white" />
+				</IconButton>
 			</ul>
 		</nav>
 	);
@@ -44,7 +69,11 @@ function NavBarComponent({
 	setCurrentlySelected,
 }) {
 	const navigate = useNavigate();
-	if (pages[selected][0] === text[0]) {
+	if (
+		selected < pages.length &&
+		selected >= 0 &&
+		pages[selected][0] === text[0]
+	) {
 		color = "brand.lightBlue";
 	}
 	return (
@@ -55,8 +84,9 @@ function NavBarComponent({
 				rounded="xl"
 				onClick={(e) => {
 					if (!e.isTrusted) return;
-					setCurrentlySelected((prev) => pages.indexOf(text));
-					navigate(pages[selected][1]);
+					const newIndex = pages.indexOf(text);
+					setCurrentlySelected(newIndex);
+					navigate(pages[newIndex][1]);
 				}}
 			>
 				<Text color="white">{text[0]}</Text>
@@ -65,9 +95,10 @@ function NavBarComponent({
 	);
 }
 
-function MoreButton() {
+function MoreButton({ setCurrentlySelected }) {
 	const [color, setColor] = useState("brand.111");
 	const buttonRef = useRef(null);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		const abortController = new AbortController();
@@ -110,7 +141,15 @@ function MoreButton() {
 				<Menu.Positioner>
 					<Menu.Content>
 						<Menu.Item value="rename">Log Out</Menu.Item>
-						<Menu.Item value="export">My Profile</Menu.Item>
+						<Menu.Item
+							value="export"
+							onClick={() => {
+								setCurrentlySelected(4);
+								navigate("/view-profile");
+							}}
+						>
+							My Profile
+						</Menu.Item>
 						<Menu.Item
 							value="delete"
 							color="fg.error"

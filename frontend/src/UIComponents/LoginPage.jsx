@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import * as anyAuth from "any-auth";
 import { useNavigate } from "react-router-dom";
-import { loginOrSignUp, loginUsingEmail } from "../Functions/loginFunctions";
+import {
+	loginOrSignUp,
+	loginOrSignUpUsingEmail,
+} from "../Functions/loginFunctions";
 import "../Styles/LoginPage.css";
 
 const frontendUrl =
@@ -12,7 +15,8 @@ const backendUrl =
 	process.env.REACT_APP_ENV === "Production"
 		? process.env.REACT_APP_SERVER_URL
 		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+// const debug = !(process.env.REACT_APP_ENV === "Production");
+const debug = false;
 
 export default function LoginPage({ mode = "login" }) {
 	const configObject = useMemo(() => {
@@ -23,7 +27,10 @@ export default function LoginPage({ mode = "login" }) {
 					clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
 					clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
 					redirectUri:
-						frontendUrl + (frontendUrl.endsWith("/") ? "" : "/"),
+						frontendUrl +
+						(frontendUrl.endsWith("/") ? "" : "/") +
+						mode +
+						"/",
 					scope: "email profile openid",
 					serverEndPoint: "auth",
 				},
@@ -46,9 +53,10 @@ export default function LoginPage({ mode = "login" }) {
 			} else {
 				const details = response.data.response.data.data;
 				if (debug) console.log(details);
-				const [result, status] = await loginUsingEmail(
+				const [result, status] = await loginOrSignUpUsingEmail(
 					details.email,
-					backendUrl
+					backendUrl,
+					mode
 				);
 				if (debug)
 					console.log("result after email auth:", result, status);
@@ -195,9 +203,14 @@ export default function LoginPage({ mode = "login" }) {
 								backendUrl,
 								mode
 							);
-							if (debug) console.log("result: ", result);
+							if (debug) console.log("result: ");
+							if (debug) console.table(result);
 							if (result.status === "error" && mode === "login") {
 								navigate("/signup");
+							} else if (result.status !== "error") {
+								navigate("/home");
+							} else {
+								alert("Invalid Username or Password");
 							}
 						})(e);
 					}}
@@ -270,6 +283,12 @@ export function InputBox({ type, num, labelText, componentRef }) {
 				id={"input-box" + (num ?? "0")}
 				type={type ?? "text"}
 				ref={componentRef}
+				className="bg padding font-color"
+				style={{
+					"--bg": "#ffffff",
+					"--padding": "3px 5px",
+					"--color": "#000000",
+				}}
 			/>
 		</div>
 	);

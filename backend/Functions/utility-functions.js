@@ -1,8 +1,19 @@
-const { ServerError } = require("../Errors/Errors");
+const {
+	ServerError,
+	ForbiddenResourceError,
+	DatabaseQueryError,
+} = require("../Errors/Errors");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const otps = require("../Models/otps");
 
-const apisToIgnore = ["/view-cookies", "/set-cookies"];
+const apisToIgnore = [
+	"/view-cookies",
+	"/set-cookies",
+	"/auth",
+	"/helper",
+	"/proxy",
+];
 const debug = !(process.env.ENV === "Production");
 
 function RSADecryptMiddleware(req, res, next) {
@@ -81,7 +92,14 @@ function AESDecrypt(data) {
 }
 
 function createJWT(data, audience, expiresIn = "1h") {
-	const encryptedData = AESEncrypt(data);
+	if (debug) console.log("creating JWT...");
+	const encryptedData = AESEncrypt(
+		typeof data === "object"
+			? JSON.stringify(data)
+			: Array.isArray(data)
+			? data.toString()
+			: data
+	);
 	if (debug) console.log("encrypted data:", encryptedData);
 	return jwt.sign({ data: encryptedData }, process.env.JWT_SECRET, {
 		algorithm: "HS256",
@@ -91,8 +109,34 @@ function createJWT(data, audience, expiresIn = "1h") {
 	});
 }
 
-function createCookieSettings(secure, currentSite, expiresIn = 15 * 60 * 1000) {
-	if (debug) console.log("cookie:", secure, currentSite, expiresIn);
+function parseJWT(token, audience) {
+	try {
+		let tokenData;
+		const extractTokenData = jwt.verify(
+			token,
+			process.env.JWT_SECRET,
+			{
+				issuer: "cyber-tools",
+				audience,
+			},
+			(err, decoded) => {
+				if (err || !decoded.data)
+					throw new ForbiddenResourceError(
+						"Invalid JWT given!",
+						undefined,
+						"Unable to extract information from the token!"
+					);
+				tokenData = decoded.data;
+			}
+		);
+		return AESDecrypt(tokenData);
+	} catch (error) {
+		console.error("Error while parsing JWT: ", error);
+	}
+}
+
+function createCookieSettings(secure, expiresIn = 15 * 60 * 1000) {
+	if (debug) console.log("cookie:", secure, expiresIn);
 	return {
 		httpOnly: secure,
 		secure,
@@ -103,7 +147,11 @@ function createCookieSettings(secure, currentSite, expiresIn = 15 * 60 * 1000) {
 }
 
 async function getIpAddress(req, test) {
-	let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+	let ipAddress =
+		process.env.ENV === "Production"
+			? req.headers["x-forwarded-for"] || req.socket.remoteAddress
+			: "1.1.1.1";
+	if (debug) console.log("ipAddress:", ipAddress);
 	if (test) ipAddress = test;
 	const data = await fetch(`http://ip-api.com/json/${ipAddress}`)
 		.then((data) => data.json())
@@ -129,13 +177,23 @@ async function getIpAddress(req, test) {
 	return data;
 }
 
-async function sendEmail(transporter, to, from) {
+function formatJSONObject(obj) {
+	return JSON.stringify(obj)
+		.replace("{", "")
+		.replace("}", "")
+		.replaceAll(",", "\n")
+		.replaceAll('"', "")
+		.replaceAll(":", ": ");
+}
+
+async function sendEmail(transporter, to, from, text) {
 	try {
 		const mailOptions = {
 			from,
 			to,
-			subject: "Hello from nodemailer",
-			text: `This is a sample mail from ${from}!! please ignore it!`,
+			subject: "Hello from Cyber Tools!",
+			text,
+			messageId: Date.now() + "-cyber-tools",
 		};
 		const info = await transporter.sendMail(mailOptions);
 		return [
@@ -153,6 +211,18 @@ async function sendEmail(transporter, to, from) {
 	}
 }
 
+function generateOTP() {
+	console.log("generating otp...");
+	let digits = "0123456789";
+	let otp = "";
+	let len = digits.length;
+	for (let i = 0; i < 6; i++) {
+		otp += digits[Math.floor(Math.random() * len)];
+	}
+	console.log("otp generated:", otp);
+	return otp;
+}
+
 module.exports = {
 	RSADecryptMiddleware,
 	decodeIncomingData,
@@ -163,4 +233,7 @@ module.exports = {
 	createCookieSettings,
 	getIpAddress,
 	sendEmail,
+	parseJWT,
+	generateOTP,
+	formatJSONObject,
 };

@@ -29,7 +29,7 @@ export async function loginOrSignUp(credentials, backendUrl, mode = "login") {
 	return result;
 }
 
-export async function loginUsingEmail(email, backendUrl) {
+export async function loginOrSignUpUsingEmail(email, backendUrl, mode) {
 	const encryptedData = await encryptData([email], debug);
 	let returnedStatus;
 	if (debug) console.log("base64:", encryptedData);
@@ -37,7 +37,8 @@ export async function loginUsingEmail(email, backendUrl) {
 	const result = await fetch(
 		backendUrl +
 			(backendUrl.endsWith("/") ? "" : "/") +
-			"get-user-via-email",
+			(mode === "login" ? "get" : "add") +
+			"-user-via-email",
 		{
 			method: "POST",
 			headers: {

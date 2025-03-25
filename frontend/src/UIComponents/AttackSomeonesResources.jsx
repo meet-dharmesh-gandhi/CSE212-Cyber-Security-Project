@@ -1,5 +1,6 @@
 import React from "react";
+import { Text } from "@chakra-ui/react";
 
 export default function AttackSomeonesResources() {
-	return <div>AttackSomeonesResources</div>;
+	return <Text color="black">AttackSomeonesResources</Text>;
 }

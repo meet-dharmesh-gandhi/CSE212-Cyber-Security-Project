@@ -1,0 +1,13 @@
+✅ sign up using email - just email, password is null or ""
+during normal login if the password is null, the login is invalid
+reset password, set password, reset username, change email
+manage passwords in my device
+sync passwords with my other devices
+protect resources by storing in the device as well as the encrypted form in the database (maybe)
+the secret key is created from the user's password hash and again encrypted using a unique string which is then converted to a private key which is stored on the device. this prevents any kind of data loss
+
+during the ask for user profile, the username will be provided (the cookie) and the email will be sent back
+
+add user's email in the cookie sent
+
+reset password => mail to user, link click verification (alert about the login) and otp verification. now change the password

@@ -64,6 +64,14 @@ body {
 	justify-content: var(--justify);
 }
 
+.flex-grow {
+	flex-grow: var(--f-g);
+}
+
+.flex-shrink {
+	flex-shrink: var(--f-s);
+}
+
 .align {
 	align-items: var(--align);
 }
