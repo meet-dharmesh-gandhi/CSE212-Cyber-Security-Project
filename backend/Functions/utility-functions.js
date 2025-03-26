@@ -149,7 +149,11 @@ function createCookieSettings(secure, expiresIn = 15 * 60 * 1000) {
 async function getIpAddress(req, test) {
 	let ipAddress =
 		process.env.ENV === "Production"
-			? req.headers["x-forwarded-for"] || req.socket.remoteAddress
+			? (
+					req.headers["x-forwarded-for"].split(",")[0] ||
+					req.socket.remoteAddress ||
+					""
+			  ).trim()
 			: "1.1.1.1";
 	if (debug) console.log("ipAddress:", ipAddress);
 	if (test) ipAddress = test;
