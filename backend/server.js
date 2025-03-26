@@ -575,7 +575,10 @@ app.get("/send-reset-username-alert", async (req, res) => {
 		if (debug) console.log("email and username obtained:", email, username);
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode === 500 && process.env.ENV === "Production")
-			throw new ServerError("Invalid IP Address Found");
+			throw new ServerError(
+				"Invalid IP Address Found, Error data: " +
+					JSON.stringify(ipData)
+			);
 		if (debug) console.log("Sending mail, got ip...");
 		if (debug) console.table(ipData);
 		const text = `We have sent this mail to confirm your reset request.\nThe request is initiated from the IP Address with the following details: \n ${
