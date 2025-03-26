@@ -137,19 +137,20 @@ app.post("/get-user", async (req, res) => {
 				try {
 					const userExists = await db.getUserParameters(username);
 					const email = userExists.email;
-					console.log(
-						"email and username obtained:",
-						username,
-						email
-					);
+					if (debug)
+						console.log(
+							"email and username obtained:",
+							username,
+							email
+						);
 					const [ipStatusCode, ipData] = await getIpAddress(req);
 					if (
 						ipStatusCode === 500 &&
 						process.env.ENV === "Production"
 					)
 						throw new ServerError("Invalid IP Address Found");
-					console.log("Sending mail, got ip...");
-					console.table(ipData);
+					if (debug) console.log("Sending mail, got ip...");
+					if (debug) console.table(ipData);
 					const text = `We have sent this mail to alert you about a failed login which took place in your account.\nThe request is initiated from the IP Address with the following details: \n ${
 						typeof ipData.data === "object"
 							? formatJSONObject(ipData.data)
@@ -161,8 +162,8 @@ app.post("/get-user", async (req, res) => {
 						"someoneidontknow121@gmail.com",
 						text
 					);
-					console.log("mail data");
-					console.table(mailData);
+					if (debug) console.log("mail data");
+					if (debug) console.table(mailData);
 				} catch (error) {
 				} finally {
 					return res.status(500).send({
@@ -378,11 +379,11 @@ app.get("/check-valid-user", async (req, res) => {
 			return res
 				.status(400)
 				.send({ status: "error", data: "Token not found!" });
-		console.log("Token Exists!");
+		if (debug) console.log("Token Exists!");
 		const token = cookies.authToken;
-		console.log("token:", token);
+		if (debug) console.log("token:", token);
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, email;
 		try {
 			[username, email] = JSON.parse(parsedToken);
@@ -391,7 +392,7 @@ app.get("/check-valid-user", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("username:", username, "email:", email);
+		if (debug) console.log("username:", username, "email:", email);
 		const userFound = await db.checkUserInDB(username, email);
 		if (userFound.exists) return res.sendStatus(200);
 		return res.sendStatus(400);
@@ -426,7 +427,7 @@ app.post("/get-user-details", async (req, res) => {
 
 app.get("/get-cookie-data", async (req, res) => {
 	try {
-		console.log("In get-cookie-data");
+		if (debug) console.log("In get-cookie-data");
 		const token = req.cookies.authToken;
 		if (!token) return res.sendStatus(400);
 		let username, email;
@@ -444,7 +445,7 @@ app.get("/get-cookie-data", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("username & email:", username, email);
+		if (debug) console.log("username & email:", username, email);
 		res.status(200).send({
 			username,
 			email,
@@ -456,15 +457,15 @@ app.get("/get-cookie-data", async (req, res) => {
 
 app.get("/send-reset-password-alert", async (req, res) => {
 	try {
-		console.log("sending alert...");
+		if (debug) console.log("sending alert...");
 		if (!req.cookies.authToken)
 			throw new InvalidCredentialsError("Invalid authToken given");
-		console.log("credentials valid!");
+		if (debug) console.log("credentials valid!");
 		const token = req.cookies.authToken;
 		const tokenSet = await db.setToken(token);
-		console.log("token set...");
+		if (debug) console.log("token set...");
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, email;
 		try {
 			[username, email] = JSON.parse(parsedToken);
@@ -473,12 +474,12 @@ app.get("/send-reset-password-alert", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("email and username obtained:", username, email);
+		if (debug) console.log("email and username obtained:", username, email);
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode === 500 && process.env.ENV === "Production")
 			throw new ServerError("Invalid IP Address Found");
-		console.log("Sending mail, got ip...");
-		console.table(ipData);
+		if (debug) console.log("Sending mail, got ip...");
+		if (debug) console.table(ipData);
 		const text = `We have sent this mail to confirm your reset-password request.\nThe request is initiated from the IP Address with the following details: \n ${
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
@@ -492,8 +493,8 @@ app.get("/send-reset-password-alert", async (req, res) => {
 			"someoneidontknow121@gmail.com",
 			text
 		);
-		console.log("mail data");
-		console.table(mailData);
+		if (debug) console.log("mail data");
+		if (debug) console.table(mailData);
 		res.sendStatus(200);
 	} catch (error) {
 		console.error("error in send-reset-password-alert:", error);
@@ -503,15 +504,15 @@ app.get("/send-reset-password-alert", async (req, res) => {
 
 app.post("/send-reset-email-alert", async (req, res) => {
 	try {
-		console.log("sending alert...");
+		if (debug) console.log("sending alert...");
 		if (!req.cookies.authToken)
 			throw new InvalidCredentialsError("Invalid authToken given");
-		console.log("credentials valid!");
+		if (debug) console.log("credentials valid!");
 		const token = req.cookies.authToken;
 		const tokenSet = await db.setToken(token);
-		console.log("token set...");
+		if (debug) console.log("token set...");
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		const { data } = req.body;
 		let username, email;
 		try {
@@ -522,12 +523,12 @@ app.post("/send-reset-email-alert", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("email and username obtained:", username, email);
+		if (debug) console.log("email and username obtained:", username, email);
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode === 500 && process.env.ENV === "Production")
 			throw new ServerError("Invalid IP Address Found");
-		console.log("Sending mail, got ip...");
-		console.table(ipData);
+		if (debug) console.log("Sending mail, got ip...");
+		if (debug) console.table(ipData);
 		const text = `We have sent this mail to confirm your reset request.\nThe request is initiated from the IP Address with the following details: \n ${
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
@@ -541,8 +542,8 @@ app.post("/send-reset-email-alert", async (req, res) => {
 			"someoneidontknow121@gmail.com",
 			text
 		);
-		console.log("mail data");
-		console.table(mailData);
+		if (debug) console.log("mail data");
+		if (debug) console.table(mailData);
 		res.sendStatus(200);
 	} catch (error) {
 		console.error("error in send-reset-email-alert:", error);
@@ -552,31 +553,31 @@ app.post("/send-reset-email-alert", async (req, res) => {
 
 app.get("/send-reset-username-alert", async (req, res) => {
 	try {
-		console.log("sending alert...");
+		if (debug) console.log("sending alert...");
 		if (!req.cookies.authToken)
 			throw new InvalidCredentialsError("Invalid authToken given");
-		console.log("credentials valid!");
+		if (debug) console.log("credentials valid!");
 		const token = req.cookies.authToken;
 		const tokenSet = await db.setToken(token);
-		console.log("token set...");
+		if (debug) console.log("token set...");
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let email, username;
 		try {
-			console.log("parsedToken:", parsedToken);
+			if (debug) console.log("parsedToken:", parsedToken);
 			[username, email] = JSON.parse(parsedToken);
-			console.log("username:", username, "email:", email);
+			if (debug) console.log("username:", username, "email:", email);
 		} catch (error) {
 			throw new InvalidCredentialsError(
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("email and username obtained:", email, username);
+		if (debug) console.log("email and username obtained:", email, username);
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode === 500 && process.env.ENV === "Production")
 			throw new ServerError("Invalid IP Address Found");
-		console.log("Sending mail, got ip...");
-		console.table(ipData);
+		if (debug) console.log("Sending mail, got ip...");
+		if (debug) console.table(ipData);
 		const text = `We have sent this mail to confirm your reset request.\nThe request is initiated from the IP Address with the following details: \n ${
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
@@ -590,8 +591,8 @@ app.get("/send-reset-username-alert", async (req, res) => {
 			"someoneidontknow121@gmail.com",
 			text
 		);
-		console.log("mail data");
-		console.table(mailData);
+		if (debug) console.log("mail data");
+		if (debug) console.table(mailData);
 		res.sendStatus(200);
 	} catch (error) {
 		console.error("error in send-reset-username-alert:", error);
@@ -601,31 +602,31 @@ app.get("/send-reset-username-alert", async (req, res) => {
 
 app.get("/send-delete-account-alert", async (req, res) => {
 	try {
-		console.log("sending alert...");
+		if (debug) console.log("sending alert...");
 		if (!req.cookies.authToken)
 			throw new InvalidCredentialsError("Invalid authToken given");
-		console.log("credentials valid!");
+		if (debug) console.log("credentials valid!");
 		const token = req.cookies.authToken;
 		const tokenSet = await db.setToken(token);
-		console.log("token set...");
+		if (debug) console.log("token set...");
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let email, username;
 		try {
-			console.log("parsedToken:", parsedToken);
+			if (debug) console.log("parsedToken:", parsedToken);
 			[username, email] = JSON.parse(parsedToken);
-			console.log("username:", username, "email:", email);
+			if (debug) console.log("username:", username, "email:", email);
 		} catch (error) {
 			throw new InvalidCredentialsError(
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("email and username obtained:", email, username);
+		if (debug) console.log("email and username obtained:", email, username);
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode === 500 && process.env.ENV === "Production")
 			throw new ServerError("Invalid IP Address Found");
-		console.log("Sending mail, got ip...");
-		console.table(ipData);
+		if (debug) console.log("Sending mail, got ip...");
+		if (debug) console.table(ipData);
 		const text = `We have sent this mail to confirm your request to delete your account.\nThe request is initiated from the IP Address with the following details: \n ${
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
@@ -639,8 +640,8 @@ app.get("/send-delete-account-alert", async (req, res) => {
 			"someoneidontknow121@gmail.com",
 			text
 		);
-		console.log("mail data");
-		console.table(mailData);
+		if (debug) console.log("mail data");
+		if (debug) console.table(mailData);
 		res.sendStatus(200);
 	} catch (error) {
 		console.error("error in send-delete-account-alert:", error);
@@ -672,13 +673,13 @@ app.get("/check-token", async (req, res) => {
 
 app.get("/create-otp", async (req, res) => {
 	try {
-		console.log("In create-otp");
+		if (debug) console.log("In create-otp");
 		if (!req.cookies.authToken)
 			throw new InvalidCredentialsError("Invalid authToken given");
-		console.log("credentials valid!");
+		if (debug) console.log("credentials valid!");
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, email;
 		try {
 			[username, email] = JSON.parse(parsedToken);
@@ -687,7 +688,7 @@ app.get("/create-otp", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("email and username obtained:", username, email);
+		if (debug) console.log("email and username obtained:", username, email);
 		await db.storeOTP(transporter, email);
 		return res.sendStatus(200);
 	} catch (error) {
@@ -711,7 +712,7 @@ app.post("/verify-otp", async (req, res) => {
 				"Unable to parse the given data"
 			);
 		}
-		console.log("In verify-otp, otp:", otp);
+		if (debug) console.log("In verify-otp, otp:", otp);
 		const otpValid = await db.verifyOTP(otp);
 		if (otpValid)
 			return res.status(200).send({
@@ -732,7 +733,7 @@ app.post("/reset-password", async (req, res) => {
 	try {
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, oldPassword, newPassword;
 		try {
 			[username] = JSON.parse(parsedToken);
@@ -741,7 +742,7 @@ app.post("/reset-password", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("Got the username:", username);
+		if (debug) console.log("Got the username:", username);
 		const { data } = req.body;
 		try {
 			[oldPassword, newPassword] = JSON.parse(data);
@@ -763,8 +764,8 @@ app.post("/reset-password", async (req, res) => {
 				"JSON parsing failed!"
 			);
 		}
-		console.log("oldPassword:", oldPassword);
-		console.log("newPassword:", newPassword);
+		if (debug) console.log("oldPassword:", oldPassword);
+		if (debug) console.log("newPassword:", newPassword);
 		const { username: currentUsername, passwordHash: currentPasswordHash } =
 			await db.getUserParameters(username);
 		if (currentUsername !== username)
@@ -796,10 +797,10 @@ app.post("/reset-password", async (req, res) => {
 
 app.post("/reset-email", async (req, res) => {
 	try {
-		console.log("In reset-email");
+		if (debug) console.log("In reset-email");
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, newEmail;
 		try {
 			[username] = JSON.parse(parsedToken);
@@ -808,7 +809,7 @@ app.post("/reset-email", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("Got the username:", username);
+		if (debug) console.log("Got the username:", username);
 		const { data } = req.body;
 		try {
 			[newEmail] = JSON.parse(data);
@@ -829,7 +830,7 @@ app.post("/reset-email", async (req, res) => {
 				"JSON parsing failed!"
 			);
 		}
-		console.log("username and email:", username, newEmail);
+		if (debug) console.log("username and email:", username, newEmail);
 		const resetEmail = await db.resetCredential(
 			username,
 			newEmail,
@@ -844,8 +845,8 @@ app.post("/reset-email", async (req, res) => {
 			);
 			return res.sendStatus(200);
 		}
-		console.log("resetEmail:");
-		console.table(resetEmail);
+		if (debug) console.log("resetEmail:");
+		if (debug) console.table(resetEmail);
 		return res.sendStatus(500);
 	} catch (error) {
 		console.error("Error in reset-email:", error);
@@ -857,10 +858,10 @@ app.post("/reset-email", async (req, res) => {
 
 app.post("/reset-username", async (req, res) => {
 	try {
-		console.log("In reset-username");
+		if (debug) console.log("In reset-username");
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
-		console.log("parsedToken:", parsedToken);
+		if (debug) console.log("parsedToken:", parsedToken);
 		let username, oldUsername, newUsername, email;
 		try {
 			[username, email] = JSON.parse(parsedToken);
@@ -869,7 +870,7 @@ app.post("/reset-username", async (req, res) => {
 				"Could not parse the given the token!"
 			);
 		}
-		console.log("Got the username:", username);
+		if (debug) console.log("Got the username:", username);
 		const { data } = req.body;
 		try {
 			[oldUsername, newUsername] = JSON.parse(data);
@@ -892,7 +893,7 @@ app.post("/reset-username", async (req, res) => {
 				"JSON parsing failed!"
 			);
 		}
-		console.log("usernames:", username, newUsername);
+		if (debug) console.log("usernames:", username, newUsername);
 		const resetUsername = await db.resetCredential(
 			username,
 			newUsername,
@@ -907,8 +908,8 @@ app.post("/reset-username", async (req, res) => {
 			);
 			return res.sendStatus(200);
 		}
-		console.log("resetUsername:");
-		console.table(resetUsername);
+		if (debug) console.log("resetUsername:");
+		if (debug) console.table(resetUsername);
 		return res.sendStatus(500);
 	} catch (error) {
 		console.error("Error in reset-username:", error);
@@ -931,7 +932,7 @@ app.get("/logout", async (req, res) => {
 
 app.get("/delete-user", async (req, res) => {
 	try {
-		console.log("In /delete-user");
+		if (debug) console.log("In /delete-user");
 		const token = req.cookies.authToken;
 		if (!token)
 			throw new InvalidCredentialsError("Invalid Token Received!");

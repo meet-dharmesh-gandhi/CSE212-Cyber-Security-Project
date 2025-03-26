@@ -75,7 +75,7 @@ function ResetUserNameDisplay() {
 			});
 
 			if (approved) {
-				console.log("approved!");
+				if (debug) console.log("approved!");
 				const data = await encryptData([
 					userNameInputs[0].current.value,
 					userNameInputs[1].current.value,
@@ -98,7 +98,7 @@ function ResetUserNameDisplay() {
 					if (data.status === 200) return true;
 					else return false;
 				});
-				console.log("usernameReset:", usernameReset);
+				if (debug) console.log("usernameReset:", usernameReset);
 				setStartPolling(false);
 				setLoading(false);
 				clearInterval(interval);
@@ -153,7 +153,7 @@ function ResetUserNameDisplay() {
 								setLoading(false);
 								setOTPReady(true);
 							} else {
-								console.log("Invalid way!");
+								if (debug) console.log("Invalid way!");
 							}
 						}}
 					>
@@ -168,7 +168,7 @@ function ResetUserNameDisplay() {
 					<OTPInputBox
 						setOTPReady={setOTPReady}
 						onOTPCorrect={async (otp) => {
-							console.log("OTP correct!");
+							if (debug) console.log("OTP correct!");
 							setOTPReady(false);
 							sendResetUsernameEmail(setLoading, setStartPolling);
 						}}
@@ -255,7 +255,7 @@ function ResetEmailDisplay() {
 			});
 
 			if (approved) {
-				console.log("approved!");
+				if (debug) console.log("approved!");
 				const data = await encryptData([emailInputs[1].current.value]);
 				const emailReset = await fetch(
 					`${backendUrl}${
@@ -275,7 +275,7 @@ function ResetEmailDisplay() {
 					if (data.status === 200) return true;
 					else return false;
 				});
-				console.log("emailReset:", emailReset);
+				if (debug) console.log("emailReset:", emailReset);
 				setStartPolling(false);
 				setLoading(false);
 				clearInterval(interval);
@@ -314,7 +314,7 @@ function ResetEmailDisplay() {
 								emailInputs[0].current.value &&
 								emailInputs[1].current.value
 							) {
-								console.log("method 1");
+								if (debug) console.log("method 1");
 								setLoading(true);
 								const otpCreated = await fetch(
 									`${backendUrl}${
@@ -331,14 +331,14 @@ function ResetEmailDisplay() {
 								setLoading(false);
 								setOTPReady(true);
 							} else if (emailInputs[1].current.value) {
-								console.log("method 2");
+								if (debug) console.log("method 2");
 								sendResetEmailEmail(
 									setLoading,
 									emailInputs,
 									setStartPolling
 								);
 							} else {
-								console.log("Invalid way!");
+								if (debug) console.log("Invalid way!");
 							}
 						}}
 					>
@@ -353,7 +353,7 @@ function ResetEmailDisplay() {
 					<OTPInputBox
 						setOTPReady={setOTPReady}
 						onOTPCorrect={async (otp) => {
-							console.log("OTP correct!");
+							if (debug) console.log("OTP correct!");
 							setOTPReady(false);
 							sendResetEmailEmail(
 								setLoading,
@@ -396,7 +396,7 @@ function ResetPasswordDisplay() {
 			});
 
 			if (approved) {
-				console.log("approved!");
+				if (debug) console.log("approved!");
 				setStartPolling(false);
 				const otpCreated = await fetch(
 					`${backendUrl}${
@@ -485,7 +485,7 @@ function ResetPasswordDisplay() {
 					<OTPInputBox
 						setOTPReady={setOTPReady}
 						onOTPCorrect={async () => {
-							console.log("OTP correct!");
+							if (debug) console.log("OTP correct!");
 							if (
 								!passwordInputs[0].current.value ||
 								!passwordInputs[1].current.value ||
@@ -496,7 +496,8 @@ function ResetPasswordDisplay() {
 							const newPass = passwordInputs[1].current.value;
 							const newPass2 = passwordInputs[2].current.value;
 							if (newPass !== newPass2) {
-								console.log("Passwords don't match!");
+								if (debug)
+									console.log("Passwords don't match!");
 								return;
 							}
 							const encryptedData = await encryptData([
@@ -529,10 +530,11 @@ function ResetPasswordDisplay() {
 									)
 								);
 							if (passwordReset) {
-								console.log("User password reset!");
+								if (debug) console.log("User password reset!");
 								setOTPReady(false);
 							} else {
-								console.log("Password reset failed!");
+								if (debug)
+									console.log("Password reset failed!");
 								// setOTPReady(false);
 							}
 						}}
@@ -546,8 +548,10 @@ function ResetPasswordDisplay() {
 
 function OTPInputBox({
 	setOTPReady,
-	onOTPCorrect = (otp) => console.log("correct otp:", otp),
-	onOTPIncorrect = (otp) => console.log("incorrect otp:", otp),
+	onOTPCorrect = (otp) =>
+		debug ? console.log("correct otp:", otp) : console.log(""),
+	onOTPIncorrect = (otp) =>
+		debug ? console.log("incorrect otp:", otp) : console.log(""),
 }) {
 	const pinRef = useRef(null);
 	return (
@@ -567,10 +571,11 @@ function OTPInputBox({
 						<Button
 							bgColor="green.400"
 							onClick={async () => {
-								console.log(
-									"otp:",
-									pinRef.current.value.trim()
-								);
+								if (debug)
+									console.log(
+										"otp:",
+										pinRef.current.value.trim()
+									);
 								const data = await encryptData([
 									pinRef.current.value.trim(),
 								]);

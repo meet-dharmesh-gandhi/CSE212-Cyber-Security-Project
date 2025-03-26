@@ -15,8 +15,8 @@ const backendUrl =
 	process.env.REACT_APP_ENV === "Production"
 		? process.env.REACT_APP_SERVER_URL
 		: process.env.REACT_APP_DEV_SERVER_URL;
-// const debug = !(process.env.REACT_APP_ENV === "Production");
-const debug = false;
+const debug = !(process.env.REACT_APP_ENV === "Production");
+// const debug = false;
 
 export default function LoginPage({ mode = "login" }) {
 	const configObject = useMemo(() => {

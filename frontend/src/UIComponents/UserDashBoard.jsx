@@ -7,6 +7,8 @@ import AttackSomeonesResources from "./AttackSomeonesResources";
 import ViewMyPasswords from "./ViewMyPasswords";
 import UserProfile from "./UserProfile";
 
+const debug = !(process.env.REACT_APP_ENV === "Production");
+
 export default function UserDashBoard({ mode = 1 }) {
 	const pages = [
 		<ResetPasswordProtection />,
@@ -16,7 +18,7 @@ export default function UserDashBoard({ mode = 1 }) {
 		<UserProfile />,
 	];
 	useEffect(() => {
-		console.log(mode, pages[mode]);
+		if (debug) console.log(mode, pages[mode]);
 	}, []);
 	return (
 		<div

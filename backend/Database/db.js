@@ -327,7 +327,7 @@ async function setToken(token) {
 				state: "approved",
 			});
 			if (exists.length > 0) return;
-			else console.log("does not exist!");
+			else if (debug) console.log("does not exist!");
 			// throw new DatabaseQueryError(
 			// 	"Duplicate token found!",
 			// 	undefined,
@@ -385,12 +385,12 @@ async function verifyOTP(otp) {
 async function storeOTP(transporter, email) {
 	try {
 		const otp = generateOTP();
-		console.log("otp:", otp);
+		if (debug) console.log("otp:", otp);
 		const added = await otps.otp.insertOne({
 			OTP: otp,
 			createdAt: new Date(),
 		});
-		console.log("added otp:", added);
+		if (debug) console.log("added otp:", added);
 		const text = `Hello there! Here is your OTP to reset your password: ${otp}\nDO NOT SHARE YOUR OTP WITH ANYONE, SHARING OTP MIGHT HELP ATTACKERS STEAL YOUR DATA!`;
 		const [mailStatusCode, mailData] = await sendEmail(
 			transporter,
@@ -398,11 +398,11 @@ async function storeOTP(transporter, email) {
 			"someoneidontknow121@gmail.com",
 			text
 		);
-		console.log("In store OTP:");
-		console.table(mailData);
-		console.log("mailStatusCode:", mailStatusCode);
+		if (debug) console.log("In store OTP:");
+		if (debug) console.table(mailData);
+		if (debug) console.log("mailStatusCode:", mailStatusCode);
 	} catch (error) {
-		console.log("Error in storeOTP:", error);
+		console.error("Error in storeOTP:", error);
 		throw new DatabaseQueryError("Error while generating OTP");
 	}
 }

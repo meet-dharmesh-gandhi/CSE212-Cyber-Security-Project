@@ -53,10 +53,10 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 						: [false, null]
 				)
 				.catch((error) => console.error(error));
-			console.log("data:", data);
+			if (debug) console.log("data:", data);
 			const username = data.username;
-			console.log("fetched:", fetched);
-			console.log("username:", username);
+			if (debug) console.log("fetched:", fetched);
+			if (debug) console.log("username:", username);
 			if (!fetched) return;
 			if (username) setUserName(username);
 		})();
@@ -214,7 +214,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 								"--br-w": "4px 4px 4px 0px",
 							}}
 							onClick={() => {
-								console.log("logging out!");
+								if (debug) console.log("logging out!");
 								setShowLogoutScreen(true);
 							}}
 						>
@@ -252,7 +252,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 								"--br-w": "4px 4px 4px 0px",
 							}}
 							onClick={() => {
-								console.log("logging out!");
+								if (debug) console.log("logging out!");
 								setShowDeletionScreen(true);
 							}}
 						>
@@ -302,7 +302,7 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 			});
 
 			if (approved) {
-				console.log("approved!");
+				if (debug) console.log("approved!");
 				setStartPolling(false);
 				const userDeleted = await fetch(
 					backendUrl.replace(/\/$/g, "") + "/delete-user",
@@ -315,7 +315,7 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 					}
 				).then((data) => (data.status === 200 ? true : false));
 				if (userDeleted) navigate("/login");
-				else console.log("user deletion failed!");
+				else if (debug) console.log("user deletion failed!");
 				clearInterval(interval);
 			}
 
@@ -474,8 +474,10 @@ function CustomLoader() {
 
 function OTPInputBox({
 	setOTPReady,
-	onOTPCorrect = (otp) => console.log("correct otp:", otp),
-	onOTPIncorrect = (otp) => console.log("incorrect otp:", otp),
+	onOTPCorrect = (otp) =>
+		debug ? console.log("correct otp:", otp) : console.log(""),
+	onOTPIncorrect = (otp) =>
+		debug ? console.log("incorrect otp:", otp) : console.log(""),
 }) {
 	const pinRef = useRef(null);
 	return (
@@ -495,10 +497,11 @@ function OTPInputBox({
 						<Button
 							bgColor="green.400"
 							onClick={async () => {
-								console.log(
-									"otp:",
-									pinRef.current.value.trim()
-								);
+								if (debug)
+									console.log(
+										"otp:",
+										pinRef.current.value.trim()
+									);
 								const data = await encryptData([
 									pinRef.current.value.trim(),
 								]);
@@ -603,9 +606,10 @@ function LogoutUserDisplay({ showDialog, setShowDialog }) {
 												if (data.status === 200)
 													navigate("/login");
 												else {
-													console.log(
-														"Failed to logout user!"
-													);
+													if (debug)
+														console.log(
+															"Failed to logout user!"
+														);
 												}
 											});
 										}}

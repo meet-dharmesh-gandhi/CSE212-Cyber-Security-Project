@@ -212,14 +212,14 @@ async function sendEmail(transporter, to, from, text) {
 }
 
 function generateOTP() {
-	console.log("generating otp...");
+	if (debug) console.log("generating otp...");
 	let digits = "0123456789";
 	let otp = "";
 	let len = digits.length;
 	for (let i = 0; i < 6; i++) {
 		otp += digits[Math.floor(Math.random() * len)];
 	}
-	console.log("otp generated:", otp);
+	if (debug) console.log("otp generated:", otp);
 	return otp;
 }
 
