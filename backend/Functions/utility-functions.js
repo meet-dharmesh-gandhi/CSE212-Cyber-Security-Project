@@ -161,7 +161,11 @@ async function getIpAddress(req, test) {
 					500,
 					{
 						status: "error",
-						data: "Failed to get ip address: " + data.message,
+						data:
+							"Failed to get ip address: " +
+							ipAddress +
+							", Error message: " +
+							data.message,
 					},
 				];
 			} else {
