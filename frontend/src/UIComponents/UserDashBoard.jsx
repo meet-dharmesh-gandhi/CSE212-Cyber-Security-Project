@@ -22,7 +22,7 @@ export default function UserDashBoard({ mode = 1 }) {
 	}, []);
 	return (
 		<div
-			className="w100vw h100vh pr grid grid-row bg"
+			className="user-dashboard w100vw h100vh pr grid grid-row bg"
 			style={{ "--bg": "beige", "--g-t-r": "1fr 10fr" }}
 		>
 			<Navbar mode={mode} />

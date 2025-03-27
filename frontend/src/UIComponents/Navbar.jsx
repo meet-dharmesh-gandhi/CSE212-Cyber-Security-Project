@@ -77,7 +77,7 @@ function NavBarComponent({
 		color = "brand.lightBlue";
 	}
 	return (
-		<li>
+		<li className="hover:bg-blue-500">
 			<Button
 				bg={color}
 				asChild

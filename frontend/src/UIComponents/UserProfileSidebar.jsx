@@ -88,7 +88,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 				<VStack gap="1rem">
 					<ButtonGroup
 						attached
-						className="w flex"
+						className="w-full"
 						style={{ "--w": "100%" }}
 					>
 						<IconButton
@@ -103,7 +103,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 							color="white"
 							rounded="full"
 							size="lg"
-							className="flex-grow justify"
+							className="w-5/6 px-5"
 							style={{
 								"--f-g": "1",
 								"--justify": "flex-end",
@@ -115,7 +115,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 					</ButtonGroup>
 					<ButtonGroup
 						attached
-						className="w flex"
+						className="w-full"
 						style={{ "--w": "100%" }}
 					>
 						<IconButton
@@ -130,7 +130,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 							color="white"
 							rounded="full"
 							size="lg"
-							className="flex-grow justify"
+							className="w-5/6 px-5"
 							style={{
 								"--f-g": "1",
 								"--justify": "flex-end",
@@ -142,7 +142,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 					</ButtonGroup>
 					<ButtonGroup
 						attached
-						className="w flex"
+						className="w-full"
 						style={{ "--w": "100%" }}
 					>
 						<IconButton
@@ -157,7 +157,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 							color="white"
 							rounded="full"
 							size="lg"
-							className="flex-grow justify"
+							className="w-5/6 px-5"
 							style={{
 								"--f-g": "1",
 								"--justify": "flex-end",

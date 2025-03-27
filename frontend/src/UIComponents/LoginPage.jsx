@@ -1,295 +1,125 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import * as anyAuth from "any-auth";
 import { useNavigate } from "react-router-dom";
-import {
-	loginOrSignUp,
-	loginOrSignUpUsingEmail,
-} from "../Functions/loginFunctions";
-import "../Styles/LoginPage.css";
+import { loginOrSignUp, loginOrSignUpUsingEmail } from "../Functions/loginFunctions";
+import Google from "../Images/google.png";
+import Background from "../Images/background.jpg";
 
 const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
+  process.env.REACT_APP_ENV === "Production"
+    ? process.env.REACT_APP_CLIENT_URL
+    : process.env.REACT_APP_DEV_CLIENT_URL;
 const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
+  process.env.REACT_APP_ENV === "Production"
+    ? process.env.REACT_APP_SERVER_URL
+    : process.env.REACT_APP_DEV_SERVER_URL;
 const debug = !(process.env.REACT_APP_ENV === "Production");
-// const debug = false;
 
 export default function LoginPage({ mode = "login" }) {
-	const configObject = useMemo(() => {
-		return {
-			serverUrl: backendUrl + (backendUrl.endsWith("/") ? "" : "/"),
-			providers: {
-				google: {
-					clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
-					clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
-					redirectUri:
-						frontendUrl +
-						(frontendUrl.endsWith("/") ? "" : "/") +
-						mode +
-						"/",
-					scope: "email profile openid",
-					serverEndPoint: "auth",
-				},
-			},
-		};
-	}, []);
+  const configObject = useMemo(() => ({
+    serverUrl: backendUrl + (backendUrl.endsWith("/") ? "" : "/"),
+    providers: {
+      google: {
+        clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+        clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
+        redirectUri: `${frontendUrl}${frontendUrl.endsWith("/") ? "" : "/"}${mode}/`,
+        scope: "email profile openid",
+        serverEndPoint: "auth",
+      },
+    },
+  }), []);
 
-	const username = useRef("");
-	const password = useRef("");
-	const email = useRef("");
-	const navigate = useNavigate();
+  const username = useRef("");
+  const password = useRef("");
+  const email = useRef("");
+  const navigate = useNavigate();
 
-	useEffect(() => {
-		anyAuth.setConfig(configObject, {});
-		(async () => {
-			const response = await anyAuth.handleOAuthRedirect();
-			if (debug) console.log(response);
-			if (!response?.data?.response?.data?.data) {
-				if (debug) console.log("incorrect response");
-			} else {
-				const details = response.data.response.data.data;
-				if (debug) console.log(details);
-				const [result, status] = await loginOrSignUpUsingEmail(
-					details.email,
-					backendUrl,
-					mode
-				);
-				if (debug)
-					console.log("result after email auth:", result, status);
-				if (status !== 200) navigate("/signup");
-				else navigate("/home");
-			}
-		})();
-	}, [configObject]);
+  useEffect(() => {
+    anyAuth.setConfig(configObject, {});
+    (async () => {
+      const response = await anyAuth.handleOAuthRedirect();
+      if (debug) console.log(response);
+      if (response?.data?.response?.data?.data) {
+        const details = response.data.response.data.data;
+        const [result, status] = await loginOrSignUpUsingEmail(details.email, backendUrl, mode);
+        if (status !== 200) navigate("/signup");
+        else navigate("/home");
+      }
+    })();
+  }, [configObject]);
 
-	return (
-		<div
-			className="w100vw h100vh flex justify align login-page-bg"
-			style={{ "--gap": "20px", "--bg": "#ffffff" }}
-		>
-			<div
-				className="login-container fx-col flex justify align gap bg padding b-r br pa w h margin"
-				style={{
-					"--gap": "40px",
-					"--bg": "#ffffff70",
-					"--padding": "30px",
-					"--b-r": "20px",
-					"--br-c": "#dddddd",
-					"--br-w": "2px",
-					"--pa-l": "50vw",
-					"--w": "40vw",
-					"--h": "auto",
-					"--margin": "2rem 2rem 2rem 0rem",
-				}}
-			>
-				<div
-					className="inputs-container fx-col flex justify align gap"
-					style={{ "--gap": "20px" }}
-				>
-					<InputBox
-						num="0"
-						labelText="Username:"
-						componentRef={username}
-					/>
-					<InputBox
-						type="password"
-						num="1"
-						labelText="Password:"
-						componentRef={password}
-					/>
-					{mode === "login" ? (
-						<></>
-					) : (
-						<InputBox
-							num="2"
-							labelText="Email:"
-							componentRef={email}
-						/>
-					)}
+  return (
+    <div className="h-screen w-screen flex flex-col justify-center items-center bg-black relative overflow-hidden">
+		<img src={Background} alt="Background Image" className="absolute top-0 right-0 z-0 opacity-50"/>
+		{/* <h1 className="heading text-white text-2xl mb-10 z-10">Cyber Security Project</h1> */}
+		<div className="inner-box w-1/4 rounded-lg shadow-md bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 p-3 z-10 animate-gradient">
+			<div className="box h-full w-full px-5 pt-4 pb-8 bg-white rounded-lg">
+				<h2 className="text-2xl font-bold text-center text-black">{mode === "login" ? "Login" : "Sign Up"}</h2>
+				<div className="space-y-4">
+					<InputBox labelText="Username:" componentRef={username} placeholder="John Doe"/>
+					<InputBox type="password" labelText="Password:" componentRef={password} placeholder="******"/>
+					{mode !== "login" && <InputBox labelText="Email:" componentRef={email} />}
 				</div>
-				{debug ? (
-					<div>
-						<button
-							onClick={() => {
-								if (debug)
-									fetch(
-										backendUrl +
-											(backendUrl.endsWith("/")
-												? ""
-												: "/") +
-											"view-cookies",
-										{
-											method: "GET",
-											credentials: "include",
-										}
-									).then(() =>
-										console.log(
-											"Check for cookies printed in your console"
-										)
-									);
-							}}
-						>
-							Check Cookies
-						</button>
-						<button
-							onClick={() => {
-								if (debug)
-									fetch(
-										backendUrl +
-											(backendUrl.endsWith("/")
-												? ""
-												: "/") +
-											"set-cookies",
-										{
-											method: "POST",
-											headers: {
-												"Content-Type":
-													"application/json",
-											},
-											credentials: "include",
-											body: JSON.stringify({
-												value: "cookie-value-2",
-											}),
-										}
-									).then(() =>
-										console.log(
-											"Check for cookies printed in your console"
-										)
-									);
-							}}
-						>
-							Set Cookies
-						</button>
-					</div>
-				) : (
-					<></>
-				)}
-				<button
-					className="login-button flex justify align padding b-r bg font-color"
-					style={{
-						"--padding": "10px 25px",
-						"--b-r": "10px",
-						"--bg": "#7d7",
-						"--color": "#000",
-					}}
-					onClick={(e) => {
-						if (debug) console.log("in!");
-						(async (e) => {
-							if (debug) console.log("in2!");
 
-							if (!e.isTrusted) {
-								alert("Script Attack!");
-								return;
-							}
+				<div className="login w-full flex justify-center">
+					<button
+						className="w-2/4 mt-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+						onClick={(e) => {
+							if (debug) console.log("in!");
+							(async (e) => {
+							if (!e.isTrusted) return alert("Script Attack!");
 
-							if (debug) console.log("in3!");
+							const credentials = [username.current.value, password.current.value];
+							if (mode !== "login") credentials.push(email.current.value);
 
-							const credentials = [
-								username.current.value,
-								password.current.value,
-								...(mode === "login"
-									? []
-									: [email.current.value]),
-							];
-							if (debug)
-								console.log(process.env.REACT_APP_PUBLIC_KEY);
-							if (debug) console.log("in4!");
-							const result = await loginOrSignUp(
-								credentials,
-								backendUrl,
-								mode
-							);
-							if (debug) console.log("result: ");
-							if (debug) console.table(result);
-							if (result.status === "error" && mode === "login") {
-								navigate("/signup");
-							} else if (result.status !== "error") {
-								navigate("/home");
-							} else {
-								alert("Invalid Username or Password");
-							}
-						})(e);
-					}}
-				>
-					{mode === "login" ? "Login" : "Sign Up"}
-				</button>
-				<div className="w100 pr">
-					<hr
-						noShade
-						className="w100 br"
-						style={{
-							"--br-c": "#333333",
-							"--br-w": "2px",
-						}}
-					/>
-					<p
-						className="pa w h padding b-r tr-x bg font-color"
-						style={{
-							"--w": "fit-content",
-							"--h": "fit-content",
-							"--pa-t": "-100%",
-							"--pa-l": "50%",
-							"--tr-x": "-50%",
-							"--bg": "#444",
-							"--color": "#fff",
-							"--padding": "0px 10px",
+							const result = await loginOrSignUp(credentials, backendUrl, mode);
+							if (result.status === "error" && mode === "login") navigate("/signup");
+							else if (result.status !== "error") navigate("/home");
+							else alert("Invalid Username or Password");
+							})(e);
 						}}
 					>
-						OR
-					</p>
+						{mode === "login" ? "Login" : "Sign Up"}
+					</button>
 				</div>
-				<button
-					className="flex padding b-r bg"
-					style={{
-						"--padding": "10px 20px",
-						"--b-r": "10px",
-						"--bg": "#4c7dff",
-					}}
+
+				<div className="text-center my-4 text-gray-500 flex justify-center items-center gap-3">
+					<div className="line h-[1px] w-1/3 bg-gray-500"></div>
+					<p>OR</p>
+					<div className="line h-[1px] w-1/3 bg-gray-500"></div>
+				</div>
+
+				<div className="google-login flex justify-center">
+					<button
+					className="w-3/4 py-2 bg-blue-500 text-white rounded-md flex justify-center items-center gap-3 hover:bg-blue-600 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
 					onClick={(e) => {
-						if (!e.isTrusted) {
-							alert("Script Attack!");
-							return;
-						}
+						if (!e.isTrusted) return alert("Script Attack!");
 						anyAuth.handleLoginButtonClick("google", document.body);
 					}}
-				>
-					{mode === "login" ? "Login" : "Sign Up"} Using Google!
-				</button>
+					>
+						<img src={Google} alt="Google Logo" className="h-8 bg-white p-1 rounded-full"/>
+						{mode === "login" ? "Login" : "Sign Up"} Using Google
+					</button>
+				</div>
 			</div>
 		</div>
-	);
+		<footer className="absolute bottom-5">
+			<h1 className="footer text-gray-300">Created by Meet Gandhi, Kaushik Chavda, Devansh Gupta and Nisarg Sahayata</h1>
+		</footer>
+    </div>
+  );
 }
 
-export function InputBox({ type, num, labelText, componentRef }) {
-	return (
-		<div
-			className="input-box flex justify align gap-col fs bg padding b-r"
-			style={{
-				"--gap": "100px",
-				"--fs": "larger",
-				"--bg": "#ddddddd",
-				"--padding": "20px 40px",
-				"--b-r": "10px",
-			}}
-		>
-			<label htmlFor={"input-box" + (num ?? "0")}>
-				{labelText ?? type ?? "text"}
-			</label>
-			<input
-				id={"input-box" + (num ?? "0")}
-				type={type ?? "text"}
-				ref={componentRef}
-				className="bg padding font-color"
-				style={{
-					"--bg": "#ffffff",
-					"--padding": "3px 5px",
-					"--color": "#000000",
-				}}
-			/>
-		</div>
-	);
+export function InputBox({ type, labelText, componentRef, placeholder }) {
+  return (
+    <div>
+      <label className="block mb-2 font-medium text-black">{labelText}</label>
+      <input
+        type={type || "text"}
+        ref={componentRef}
+        className="w-full px-4 py-3 border border-gray-300 rounded-md"
+		placeholder={placeholder}
+      />
+    </div>
+  );
 }
