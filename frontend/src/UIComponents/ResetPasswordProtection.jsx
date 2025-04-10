@@ -62,14 +62,11 @@ export default function ResetPasswordProtection() {
 		{ value: "c", title: "Third Item", text: "Some value 3..." },
 	];
 	return (
-		<div
-			className="margin bg b-r padding flex fx-col"
-			style={{
-				"--margin": "50px 50px",
-				"--bg": "black",
-				"--b-r": "30px",
-				"--padding": "30px",
-			}}
+		<Box
+			margin="2rem 2rem"
+			bgColor="black"
+			borderRadius="2rem"
+			padding="2rem"
 		>
 			<Accordion.Root
 				multiple
@@ -93,6 +90,6 @@ export default function ResetPasswordProtection() {
 					</Accordion.Item>
 				))}
 			</Accordion.Root>
-		</div>
+		</Box>
 	);
 }

@@ -17,6 +17,7 @@ const {
 	sendEmail,
 } = require("../Functions/utility-functions.js");
 const otps = require("../Models/otps.js");
+const passwordManager = require("../Models/passwordManager.js");
 // import mongoose from "mongoose";
 const debug = !(process.env.ENV === "Production");
 
@@ -443,6 +444,121 @@ async function deletedUserFromDB(username, email) {
 	}
 }
 
+async function markPasswordManagerInitialized(username) {
+	try {
+		const userExists = await users.user.find({ username });
+		if (userExists.length <= 0) return 400;
+		const checkPasswordManagerInitialized =
+			await passwordManager.passwordManager.find({
+				username,
+				initialized: true,
+			});
+		if (checkPasswordManagerInitialized.length > 0) return 400;
+		const userExistsInPasswordManagerDB =
+			await passwordManager.passwordManager.find({
+				username,
+			});
+		let passwordManagerInitialized;
+		if (userExistsInPasswordManagerDB.length > 0) {
+			passwordManagerInitialized =
+				await passwordManager.passwordManager.updateOne(
+					{ username },
+					{
+						$set: {
+							initialized: true,
+							passwords: JSON.stringify({}),
+						},
+					}
+				);
+			if (passwordManagerInitialized.modifiedCount > 0) return 200;
+			if (passwordManagerInitialized.acknowledged) return 400;
+		} else {
+			passwordManagerInitialized =
+				await passwordManager.passwordManager.insertOne({
+					username,
+					passwords: JSON.stringify({}),
+					initialized: true,
+				});
+			console.log("Initialized a Password Manager!");
+			return 200;
+		}
+		if (debug) console.log("markPasswordManagerInitialized error:");
+		if (debug) console.log(JSON.stringify(passwordManagerInitialized));
+		throw new ServerError(
+			"Could not initialize the password manager due to an unknown error"
+		);
+	} catch (error) {
+		console.error("Error while initializing the password manager!", error);
+		throw new ServerError(
+			"Unknown Error while initializing the password manager",
+			error
+		);
+	}
+}
+
+async function addPasswordsToDatabase(username, passwords) {
+	try {
+		const userExists = await users.user.find({ username });
+		if (userExists.length <= 0) return 400;
+		const passwordManagerInitialized =
+			await passwordManager.passwordManager.find({
+				username,
+				initialized: true,
+			});
+		if (passwordManagerInitialized.length == 0) return 400;
+		const passwordsStored = await passwordManager.passwordManager.updateOne(
+			{ username },
+			{ $set: { passwords } }
+		);
+		if (!passwordsStored.acknowledged) return 400;
+		return 200;
+	} catch (error) {
+		console.error("Error while initializing the password manager!", error);
+		throw new ServerError(
+			"Unknown Error while initializing the password manager",
+			error
+		);
+	}
+}
+
+async function checkIfPasswordManagerInitialized(username) {
+	try {
+		const userExists = await users.user.find({ username });
+		if (userExists.length <= 0) return 400;
+		const checkPasswordManagerInitialized =
+			await passwordManager.passwordManager.find({
+				username,
+				initialized: true,
+			});
+		if (checkPasswordManagerInitialized.length == 0) return 400;
+		return 200;
+	} catch (error) {
+		console.error("Error while initializing the password manager!", error);
+		throw new ServerError(
+			"Unknown Error while initializing the password manager",
+			error
+		);
+	}
+}
+
+async function getPasswordsFromDatabase(username) {
+	try {
+		const userExists = await users.user.find({ username });
+		const userPasswordsExist = await passwordManager.passwordManager.find({
+			username,
+		});
+		if (userExists.length <= 0 || userPasswordsExist.length <= 0)
+			return [400, "Invalid Username!"];
+		return [200, userPasswordsExist[0].passwords];
+	} catch (error) {
+		console.error("Error while initializing the password manager!", error);
+		throw new ServerError(
+			"Unknown Error while initializing the password manager",
+			error
+		);
+	}
+}
+
 module.exports = {
 	connectToMongoDB,
 	addUser,
@@ -459,4 +575,8 @@ module.exports = {
 	checkTokenApproved,
 	checkUserInDB,
 	deletedUserFromDB,
+	markPasswordManagerInitialized,
+	addPasswordsToDatabase,
+	checkIfPasswordManagerInitialized,
+	getPasswordsFromDatabase,
 };

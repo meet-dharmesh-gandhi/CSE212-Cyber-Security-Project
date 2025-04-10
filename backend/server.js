@@ -969,6 +969,130 @@ app.get("/delete-user", async (req, res) => {
 	}
 });
 
+app.post("/initialize-password-manager", async (req, res) => {
+	try {
+		if (!req.cookies.authToken)
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const passwordManagerInitialized =
+			await db.markPasswordManagerInitialized(username);
+		return res.sendStatus(passwordManagerInitialized);
+	} catch (error) {
+		console.error("/initialize-password-manager:", error);
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
+	}
+});
+
+app.put("/sync-my-passwords", async (req, res) => {
+	try {
+		if (!req.cookies.authToken)
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		const data = parseJWT(req.cookies.authToken);
+		const passwords = req.body.data;
+		if (debug) console.log("/sync-my-passwords data", data);
+		if (debug) console.log("/sync-my-passwords passwords", passwords);
+		let username, passwordsString;
+		try {
+			[username] = JSON.parse(data);
+			[passwordsString] = JSON.parse(passwords);
+			if (debug) console.log("Passwords:", passwordsString);
+		} catch (error) {
+			console.error(
+				"Error while parsing JSON Object in /sync-my-passwords:",
+				error
+			);
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const passwordsStored = await db.addPasswordsToDatabase(
+			username,
+			passwordsString
+		);
+		res.sendStatus(passwordsStored);
+	} catch (error) {
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
+	}
+});
+
+app.get("/get-passwords", async (req, res) => {
+	try {
+		if (!req.cookies.authToken)
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			console.error(
+				"Error while parsing JSON Object in /sync-my-passwords:",
+				error
+			);
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const [status, passwords] = await db.getPasswordsFromDatabase(username);
+		res.status(status).json({ passwords });
+	} catch (error) {
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
+	}
+});
+
+app.get("/password-manager-initialized", async (req, res) => {
+	if (debug) console.log("In password-manager-initialized!");
+	try {
+		if (!req.cookies.authToken)
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		if (debug) console.log("auth token found...");
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		if (debug) console.log("username got...", username);
+		const passwordManagerInitialized =
+			await db.checkIfPasswordManagerInitialized(username);
+		if (debug)
+			console.log(
+				"passwordManagerInitialized:",
+				passwordManagerInitialized
+			);
+		if (passwordManagerInitialized !== 200) return res.sendStatus(400);
+		return res.sendStatus(200);
+	} catch (error) {
+		res.status(error.statusCode ?? 500).json({
+			status: "error",
+			data: error.message,
+			exists: false,
+		});
+	}
+});
+
 app.get("/login", async (req, res) => {
 	const [ipStatusCode, ipData] = await getIpAddress(req, "8.8.8.8");
 	const [mailStatusCode, mailData] = await sendEmail(

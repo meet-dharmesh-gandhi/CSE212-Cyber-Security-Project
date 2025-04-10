@@ -1,3 +1,10 @@
+import { addPasswordToLocalStorage } from "./passwordManagerFunctions";
+
+const backendUrl =
+	process.env.REACT_APP_ENV === "Production"
+		? process.env.REACT_APP_SERVER_URL
+		: process.env.REACT_APP_DEV_SERVER_URL;
+
 export async function encryptData(data, debug = false) {
 	const chunkSize = Number.parseInt(
 		process.env.REACT_APP_PUBLIC_KEY_CHUNK_SIZE
@@ -5,21 +12,6 @@ export async function encryptData(data, debug = false) {
 	if (debug) console.log("chunkSize:", chunkSize);
 	if (debug) console.log("data:", data);
 	const chunks = [];
-	// const bufferData = Buffer.from(data, "utf-8");
-	// const encoder = new TextEncoder();
-	// const bufferData = encoder.encode(data);
-	for (let i = 0; i < data.length; i += chunkSize) {
-		const chunk = data.slice(i, i + chunkSize);
-		if (debug) console.log("chunk:", chunk);
-		const encryptedChunk = await encryptDataChunk(chunk, debug);
-		if (debug) console.log("encryptedChunk: ", encryptedChunk, "index:", i);
-		chunks.push(encryptedChunk);
-	}
-	if (debug) console.log("chunks:", chunks);
-	return chunks.join("|");
-}
-
-export async function encryptDataChunk(data, debug = false) {
 	const base64Key = process.env.REACT_APP_PUBLIC_KEY.replace(
 		/-----BEGIN PUBLIC KEY-----/g,
 		""
@@ -39,24 +31,142 @@ export async function encryptDataChunk(data, debug = false) {
 		false,
 		["encrypt"]
 	);
-	let encryptedData = "";
+	let encodedData = new TextEncoder().encode(JSON.stringify(data));
 	if (debug) console.log("in6!", publicKey);
-	if (debug)
-		console.log(new TextEncoder().encode(JSON.stringify(data)).length);
+	if (debug) console.log(encodedData.length);
+	if (debug) console.log(encodedData);
+	if (debug) console.log(JSON.stringify(data));
+	// const bufferData = Buffer.from(data, "utf-8");
+	// const encoder = new TextEncoder();
+	// const bufferData = encoder.encode(data);
+	for (let i = 0; i < encodedData.length; i += chunkSize) {
+		const chunk = encodedData.slice(i, i + chunkSize);
+		if (debug) console.log("chunk:", chunk);
+		const encryptedChunk = await encryptDataChunk(chunk, publicKey, debug);
+		if (debug) console.log("encryptedChunk: ", encryptedChunk, "index:", i);
+		if (!encryptedChunk) throw new Error("Null Chunk was Found!");
+		chunks.push(encryptedChunk);
+	}
+	if (debug) console.log("chunks:", chunks);
+	return chunks.join("|");
+}
+
+export async function encryptDataChunk(data, publicKey, debug = false) {
 	try {
-		encryptedData = await window.crypto.subtle.encrypt(
+		if (debug) console.log("data:", data);
+		const encryptedData = await window.crypto.subtle.encrypt(
 			{ name: "RSA-OAEP" },
 			publicKey,
-			new TextEncoder().encode(JSON.stringify(data))
+			data
 		);
 		if (debug) console.log(encryptedData);
+		if (debug) console.log("in7!");
+		const base64EncryptedData = btoa(
+			String.fromCharCode.apply(null, new Uint8Array(encryptedData))
+		);
+		return base64EncryptedData;
 	} catch (error) {
 		console.error(error);
 		return null;
 	}
-	if (debug) console.log("in7!");
-	const base64EncryptedData = btoa(
-		String.fromCharCode.apply(null, new Uint8Array(encryptedData))
+}
+
+export async function doPBKDF2(password, salt) {
+	const encoder = new TextEncoder();
+	const importedKey = await window.crypto.subtle.importKey(
+		"raw",
+		encoder.encode(password),
+		{ name: "PBKDF2" },
+		false,
+		["deriveKey"]
 	);
-	return base64EncryptedData;
+	return window.crypto.subtle.deriveKey(
+		{
+			name: "PBKDF2",
+			salt,
+			iterations: 100000, // High iteration count for security
+			hash: "SHA-256",
+		},
+		importedKey,
+		{ name: "AES-GCM", length: 256 },
+		false,
+		["encrypt", "decrypt"]
+	);
+}
+
+export async function encryptDataAESGCM(password, plaintext, salt, iv) {
+	const key = await doPBKDF2(password, salt);
+
+	console.log("password, plaintext, salt, iv, key:");
+	console.log(password);
+	console.log(plaintext);
+	console.log(salt);
+	console.log(iv);
+	console.log(key);
+
+	const encoder = new TextEncoder();
+	const encrypted = await window.crypto.subtle.encrypt(
+		{ name: "AES-GCM", iv: iv },
+		key,
+		encoder.encode(plaintext)
+	);
+
+	console.log("encrypted:");
+	console.log(encrypted);
+
+	const combined = new Uint8Array(
+		salt.length + iv.length + encrypted.byteLength
+	);
+	combined.set(salt, 0);
+	combined.set(iv, salt.length);
+	combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+	console.log("combined:");
+	console.log(combined);
+
+	return btoa(String.fromCharCode(...combined)); // Convert to Base64
+}
+
+export async function decryptDataAESGCM(
+	password,
+	encryptedData,
+	saltLength,
+	ivLength
+) {
+	try {
+		const combined = Uint8Array.from(atob(encryptedData), (c) =>
+			c.charCodeAt(0)
+		);
+
+		const salt = combined.slice(0, saltLength);
+		const iv = combined.slice(saltLength, saltLength + ivLength);
+		const ciphertext = combined.slice(saltLength + ivLength);
+
+		console.log(salt);
+		console.log(iv);
+		console.log(ciphertext);
+
+		const key = await doPBKDF2(password, salt);
+
+		console.log("Got key:", key);
+
+		const decrypted = await window.crypto.subtle.decrypt(
+			{ name: "AES-GCM", iv: iv },
+			key,
+			ciphertext
+		);
+
+		console.log("Decrypted:", decrypted);
+		return new TextDecoder().decode(decrypted);
+	} catch (error) {
+		console.error("Error while decrypting: ", error);
+	}
+}
+
+export function generateSalt(saltLength) {
+	return window.crypto.getRandomValues(new Uint8Array(saltLength));
+}
+
+export function generateIV(ivLength) {
+	return window.crypto.getRandomValues(new Uint8Array(ivLength));
 }
