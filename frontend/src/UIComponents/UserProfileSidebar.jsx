@@ -413,11 +413,9 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 													}
 												);
 												if (otpCreated.status !== 200)
-													return debug
-														? console.log(
-																"Unknown Error in OTP Creation"
-														  )
-														: null;
+													return console.log(
+														"Unknown Error in OTP Creation"
+													);
 												setLoading(false);
 												setEnterOTP(true);
 											}}
@@ -612,10 +610,9 @@ function LogoutUserDisplay({ showDialog, setShowDialog }) {
 												if (data.status === 200)
 													navigate("/login");
 												else {
-													if (debug)
-														console.log(
-															"Failed to logout user!"
-														);
+													console.log(
+														"Failed to logout user!"
+													);
 												}
 											});
 										}}

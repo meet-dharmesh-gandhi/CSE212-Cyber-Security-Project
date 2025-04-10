@@ -150,11 +150,9 @@ function ResetUserNameDisplay() {
 									}
 								);
 								if (otpCreated.status !== 200)
-									return debug
-										? console.log(
-												"Unknown Error in OTP Creation"
-										  )
-										: null;
+									return console.log(
+										"Unknown Error in OTP Creation"
+									);
 								setLoading(false);
 								setOTPReady(true);
 							} else {
@@ -334,11 +332,9 @@ function ResetEmailDisplay() {
 									}
 								);
 								if (otpCreated.status !== 200)
-									return debug
-										? console.log(
-												"Unknown Error in OTP Creation"
-										  )
-										: null;
+									return console.log(
+										"Unknown Error in OTP Creation"
+									);
 								setLoading(false);
 								setOTPReady(true);
 							} else if (emailInputs[1].current.value) {
@@ -422,9 +418,7 @@ function ResetPasswordDisplay() {
 					}
 				);
 				if (otpCreated.status !== 200)
-					return debug
-						? console.log("Unknown Error in OTP Creation")
-						: null;
+					return console.log("Unknown Error in OTP Creation");
 				setLoading(false);
 				setOTPReady(true);
 				clearInterval(interval);
