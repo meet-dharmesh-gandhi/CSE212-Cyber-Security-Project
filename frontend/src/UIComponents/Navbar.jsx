@@ -5,7 +5,7 @@ import { HiDotsHorizontal } from "react-icons/hi";
 import { FaUserCog } from "react-icons/fa";
 
 const pages = [
-	["Reset Password Protection", "/password-protection"],
+	["My Activity", "/my-activity"],
 	["Protect My Resources", "/protect-resources"],
 	["Attack Someones Resources", "/attack-resources"],
 	["View My Passwords", "/view-passwords"],
@@ -44,7 +44,6 @@ export default function Navbar({ toSelect = 0 }) {
 						text={text}
 					/>
 				))}
-				{/* <MoreButton setCurrentlySelected={setCurrentlySelected} /> */}
 				<IconButton
 					bgColor={
 						currentlySelected === 4
@@ -92,74 +91,5 @@ function NavBarComponent({
 				<Text color="white">{text[0]}</Text>
 			</Button>
 		</li>
-	);
-}
-
-function MoreButton({ setCurrentlySelected }) {
-	const [color, setColor] = useState("brand.111");
-	const buttonRef = useRef(null);
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		const abortController = new AbortController();
-		document.addEventListener(
-			"mousedown",
-			(e) => {
-				if (!e.isTrusted) return;
-				if (
-					buttonRef.current &&
-					!buttonRef.current.contains(e.target)
-				) {
-					setColor((prev) => "brand.111");
-				}
-			},
-			{ signal: abortController.signal }
-		);
-
-		return () => {
-			abortController.abort();
-		};
-	}, []);
-
-	return (
-		<Menu.Root>
-			<Menu.Trigger asChild>
-				<IconButton
-					bgColor={color}
-					borderColor="brand.999"
-					variant="outline"
-					ref={buttonRef}
-					onClick={(e) => {
-						if (!e.isTrusted) return;
-						setColor((prev) => "brand.222");
-					}}
-				>
-					<HiDotsHorizontal color="white" />
-				</IconButton>
-			</Menu.Trigger>
-			<Portal>
-				<Menu.Positioner>
-					<Menu.Content>
-						<Menu.Item value="rename">Log Out</Menu.Item>
-						<Menu.Item
-							value="export"
-							onClick={() => {
-								setCurrentlySelected(4);
-								navigate("/view-profile");
-							}}
-						>
-							My Profile
-						</Menu.Item>
-						<Menu.Item
-							value="delete"
-							color="fg.error"
-							_hover={{ bg: "bg.error", color: "fg.error" }}
-						>
-							Delete My Account
-						</Menu.Item>
-					</Menu.Content>
-				</Menu.Positioner>
-			</Portal>
-		</Menu.Root>
 	);
 }

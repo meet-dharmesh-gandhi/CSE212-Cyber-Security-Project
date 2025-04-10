@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import "../Styles/UserDashBoard.css";
 import Navbar from "./Navbar";
-import ResetPasswordProtection from "./ResetPasswordProtection";
+import MyActivity from "./MyActivity";
 import ProtectMyResources from "./ProtectMyResources";
 import AttackSomeonesResources from "./AttackSomeonesResources";
 import ViewMyPasswords from "./ViewMyPasswords";
@@ -12,7 +12,7 @@ const debug = !(process.env.REACT_APP_ENV === "Production");
 export default function UserDashBoard({ mode = 1 }) {
 	const pages = useMemo(
 		() => [
-			<ResetPasswordProtection />,
+			<MyActivity />,
 			<ProtectMyResources />,
 			<AttackSomeonesResources />,
 			<ViewMyPasswords />,
