@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import "../Styles/UserDashBoard.css";
 import Navbar from "./Navbar";
 import ResetPasswordProtection from "./ResetPasswordProtection";
@@ -10,16 +10,19 @@ import UserProfile from "./UserProfile";
 const debug = !(process.env.REACT_APP_ENV === "Production");
 
 export default function UserDashBoard({ mode = 1 }) {
-	const pages = [
-		<ResetPasswordProtection />,
-		<ProtectMyResources />,
-		<AttackSomeonesResources />,
-		<ViewMyPasswords />,
-		<UserProfile />,
-	];
+	const pages = useMemo(
+		() => [
+			<ResetPasswordProtection />,
+			<ProtectMyResources />,
+			<AttackSomeonesResources />,
+			<ViewMyPasswords />,
+			<UserProfile />,
+		],
+		[]
+	);
 	useEffect(() => {
 		if (debug) console.log(mode, pages[mode]);
-	}, []);
+	}, [mode, pages]);
 	return (
 		<div
 			className="w100vw h100vh pr grid grid-row bg"

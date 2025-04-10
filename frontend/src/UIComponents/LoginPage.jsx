@@ -36,7 +36,7 @@ export default function LoginPage({ mode = "login" }) {
 				},
 			},
 		};
-	}, []);
+	}, [mode]);
 
 	const username = useRef("");
 	const password = useRef("");
@@ -64,7 +64,7 @@ export default function LoginPage({ mode = "login" }) {
 				else navigate("/home");
 			}
 		})();
-	}, [configObject]);
+	}, [configObject, mode, navigate]);
 
 	return (
 		<div

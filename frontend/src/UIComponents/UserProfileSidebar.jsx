@@ -412,6 +412,12 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 														},
 													}
 												);
+												if (otpCreated.status !== 200)
+													return debug
+														? console.log(
+																"Unknown Error in OTP Creation"
+														  )
+														: null;
 												setLoading(false);
 												setEnterOTP(true);
 											}}
@@ -588,7 +594,7 @@ function LogoutUserDisplay({ showDialog, setShowDialog }) {
 										bgColor="green.500"
 										size="lg"
 										onClick={async () => {
-											const tokenValid = await fetch(
+											await fetch(
 												`${backendUrl}${
 													backendUrl.endsWith("/")
 														? ""

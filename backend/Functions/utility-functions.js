@@ -17,7 +17,7 @@ const apisToIgnore = [
 const debug = !(process.env.ENV === "Production");
 
 function RSADecryptMiddleware(req, res, next) {
-	console.log("Path:", req.path);
+	if (debug) console.log("Path:", req.path);
 	for (let api of apisToIgnore) if (req.path.startsWith(api)) return next();
 	if (!req.body.data) return next();
 	try {

@@ -1,9 +1,8 @@
-import { addPasswordToLocalStorage } from "./passwordManagerFunctions";
-
 const backendUrl =
 	process.env.REACT_APP_ENV === "Production"
 		? process.env.REACT_APP_SERVER_URL
 		: process.env.REACT_APP_DEV_SERVER_URL;
+const debug = !(process.env.REACT_APP_ENV === "Production");
 
 export async function encryptData(data, debug = false) {
 	const chunkSize = Number.parseInt(
@@ -97,12 +96,12 @@ export async function doPBKDF2(password, salt) {
 export async function encryptDataAESGCM(password, plaintext, salt, iv) {
 	const key = await doPBKDF2(password, salt);
 
-	console.log("password, plaintext, salt, iv, key:");
-	console.log(password);
-	console.log(plaintext);
-	console.log(salt);
-	console.log(iv);
-	console.log(key);
+	if (debug) console.log("password, plaintext, salt, iv, key:");
+	if (debug) console.log(password);
+	if (debug) console.log(plaintext);
+	if (debug) console.log(salt);
+	if (debug) console.log(iv);
+	if (debug) console.log(key);
 
 	const encoder = new TextEncoder();
 	const encrypted = await window.crypto.subtle.encrypt(
@@ -111,8 +110,8 @@ export async function encryptDataAESGCM(password, plaintext, salt, iv) {
 		encoder.encode(plaintext)
 	);
 
-	console.log("encrypted:");
-	console.log(encrypted);
+	if (debug) console.log("encrypted:");
+	if (debug) console.log(encrypted);
 
 	const combined = new Uint8Array(
 		salt.length + iv.length + encrypted.byteLength
@@ -121,8 +120,8 @@ export async function encryptDataAESGCM(password, plaintext, salt, iv) {
 	combined.set(iv, salt.length);
 	combined.set(new Uint8Array(encrypted), salt.length + iv.length);
 
-	console.log("combined:");
-	console.log(combined);
+	if (debug) console.log("combined:");
+	if (debug) console.log(combined);
 
 	return btoa(String.fromCharCode(...combined)); // Convert to Base64
 }
@@ -142,13 +141,13 @@ export async function decryptDataAESGCM(
 		const iv = combined.slice(saltLength, saltLength + ivLength);
 		const ciphertext = combined.slice(saltLength + ivLength);
 
-		console.log(salt);
-		console.log(iv);
-		console.log(ciphertext);
+		if (debug) console.log(salt);
+		if (debug) console.log(iv);
+		if (debug) console.log(ciphertext);
 
 		const key = await doPBKDF2(password, salt);
 
-		console.log("Got key:", key);
+		if (debug) console.log("Got key:", key);
 
 		const decrypted = await window.crypto.subtle.decrypt(
 			{ name: "AES-GCM", iv: iv },
@@ -156,10 +155,10 @@ export async function decryptDataAESGCM(
 			ciphertext
 		);
 
-		console.log("Decrypted:", decrypted);
+		if (debug) console.log("Decrypted:", decrypted);
 		return new TextDecoder().decode(decrypted);
 	} catch (error) {
-		console.error("Error while decrypting: ", error);
+		if (debug) console.error("Error while decrypting: ", error);
 	}
 }
 

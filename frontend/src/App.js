@@ -19,14 +19,14 @@ const routesToIgnore = ["/login", "/signup", "/verify-token"];
 export default function App() {
 	useEffect(() => {
 		(async () => {
-			console.log(window.location.pathname);
+			if (debug) console.log(window.location.pathname);
 			if (
 				routesToIgnore.includes(
 					window.location.pathname.replace(/\/$/g, "")
 				)
 			)
 				return;
-			const validUser = await fetch(
+			await fetch(
 				backendUrl +
 					(backendUrl.endsWith("/") ? "" : "/") +
 					"check-valid-user",

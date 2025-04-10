@@ -15,7 +15,6 @@ import {
 import { PasswordInput } from "../components/ui/password-input";
 import React, { useEffect, useRef, useState } from "react";
 import { encryptData } from "../Functions/cryptoFunctions";
-import { useNavigate } from "react-router-dom";
 
 const frontendUrl =
 	process.env.REACT_APP_ENV === "Production"
@@ -150,6 +149,12 @@ function ResetUserNameDisplay() {
 										},
 									}
 								);
+								if (otpCreated.status !== 200)
+									return debug
+										? console.log(
+												"Unknown Error in OTP Creation"
+										  )
+										: null;
 								setLoading(false);
 								setOTPReady(true);
 							} else {
@@ -328,6 +333,12 @@ function ResetEmailDisplay() {
 										},
 									}
 								);
+								if (otpCreated.status !== 200)
+									return debug
+										? console.log(
+												"Unknown Error in OTP Creation"
+										  )
+										: null;
 								setLoading(false);
 								setOTPReady(true);
 							} else if (emailInputs[1].current.value) {
@@ -410,6 +421,10 @@ function ResetPasswordDisplay() {
 						},
 					}
 				);
+				if (otpCreated.status !== 200)
+					return debug
+						? console.log("Unknown Error in OTP Creation")
+						: null;
 				setLoading(false);
 				setOTPReady(true);
 				clearInterval(interval);

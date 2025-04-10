@@ -15,11 +15,10 @@ import {
 	PasswordInput,
 	PasswordStrengthMeter,
 } from "../components/ui/password-input";
-import React, { Component, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LuCheck, LuPencilLine, LuPlus, LuX } from "react-icons/lu";
 import { MdDelete } from "react-icons/md";
 import {
-	addPasswordToLocalStorage,
 	checkPasswordAndParsePasswords,
 	getPasswordFromLocalStorage,
 	getPasswordsFromCloud,
@@ -32,6 +31,8 @@ const backendUrl =
 	process.env.REACT_APP_ENV === "Production"
 		? process.env.REACT_APP_SERVER_URL
 		: process.env.REACT_APP_DEV_SERVER_URL;
+
+const debug = !(process.env.REACT_APP_ENV === "Production");
 
 export default function ViewMyPasswords() {
 	const [passwords, setPasswords] = useState({});
@@ -49,7 +50,7 @@ export default function ViewMyPasswords() {
 	};
 
 	const deletePassword = (key) => {
-		console.log("Called to delete!");
+		if (debug) console.log("Called to delete!");
 		setPasswords((prev) => {
 			const updated = { ...prev };
 			delete updated[key];
@@ -73,7 +74,7 @@ export default function ViewMyPasswords() {
 		}));
 	};
 
-	const checkPasswordStrength = () => {
+	const checkPasswordStrength = useCallback(() => {
 		if (!userPassword || userPassword.length < 0) return 0;
 		if (userPassword.length < 8) return 1;
 		const [hasUpper, hasLower, hasNums, hasSpecial] = [
@@ -87,7 +88,7 @@ export default function ViewMyPasswords() {
 		if (hasSpecial && hasNums) return 4;
 		if (hasNums) return 3;
 		return 2;
-	};
+	}, [userPassword]);
 
 	useEffect(() => {
 		(async () => {
@@ -122,9 +123,9 @@ export default function ViewMyPasswords() {
 	// }, [passwords]);
 
 	useEffect(() => {
-		console.log(checkPasswordStrength());
+		if (debug) console.log(checkPasswordStrength());
 		setPasswordStrength(checkPasswordStrength());
-	}, [userPassword]);
+	}, [userPassword, checkPasswordStrength]);
 
 	return (
 		<Box
@@ -215,13 +216,15 @@ export default function ViewMyPasswords() {
 								// // localStorage.setItem("passwords", JSON.stringify(passwords));
 								// addPasswordToLocalStorage(passwords);
 								if (getPasswordFromLocalStorage() === "{}") {
-									console.log(
-										"Passwords not found in the local storage, reverting to cloud..."
-									);
-									console.log(
-										"password, salt, iv:",
-										rawCloudPasswords
-									);
+									if (debug)
+										console.log(
+											"Passwords not found in the local storage, reverting to cloud..."
+										);
+									if (debug)
+										console.log(
+											"password, salt, iv:",
+											rawCloudPasswords
+										);
 									syncPasswordsToCloud(
 										false,
 										userPassword,
@@ -255,9 +258,10 @@ export default function ViewMyPasswords() {
 								// // localStorage.setItem("passwords", JSON.stringify(passwords));
 								// addPasswordToLocalStorage(passwords);
 								if (getPasswordFromLocalStorage() !== "{}") {
-									console.log(
-										"passwords are in local storage!"
-									);
+									if (debug)
+										console.log(
+											"passwords are in local storage!"
+										);
 									savePasswordsLocally(
 										passwords,
 										userPassword
@@ -267,13 +271,15 @@ export default function ViewMyPasswords() {
 									Array.isArray(rawCloudPasswords.current) &&
 									rawCloudPasswords.current.length === 3
 								) {
-									console.log(
-										"Passwords not found in the local storage, reverting to cloud..."
-									);
-									console.log(
-										"password, salt, iv:",
-										rawCloudPasswords
-									);
+									if (debug)
+										console.log(
+											"Passwords not found in the local storage, reverting to cloud..."
+										);
+									if (debug)
+										console.log(
+											"password, salt, iv:",
+											rawCloudPasswords
+										);
 									savePasswordsLocally(
 										passwords,
 										userPassword,
@@ -308,20 +314,23 @@ export default function ViewMyPasswords() {
 						<Button
 							bgColor="green.400"
 							onClick={() => {
-								console.log("Setting up...");
+								if (debug) console.log("Setting up...");
 								if (!userPassword || passwordStrength < 3)
-									return console.log("Invalid Password!");
+									return debug
+										? console.log("Invalid Password!")
+										: null;
 								if (!passwordManagerSetup) {
 									const passwordManagerInitialized =
 										initializePasswordManager(userPassword);
 									if (passwordManagerInitialized) {
-										console.log(
-											"Password Manager Initialized!"
-										);
+										if (debug)
+											console.log(
+												"Password Manager Initialized!"
+											);
 										// passwordManagerSetup && userPasswordValid
 										setupPasswordManagerSetup(true);
 										setUserPasswordValid(true);
-									} else
+									} else if (debug)
 										console.log(
 											"Some Error while initializing the Password Manager!"
 										);
@@ -337,13 +346,14 @@ export default function ViewMyPasswords() {
 													getPasswordFromLocalStorage()
 												);
 											if (!validPassword)
-												console.log(
-													"Invalid Password!"
-												);
-											else {
-												setPasswords(passwords);
-												setUserPasswordValid(true);
-											}
+												if (debug)
+													console.log(
+														"Invalid Password!"
+													);
+												else {
+													setPasswords(passwords);
+													setUserPasswordValid(true);
+												}
 										} catch (error) {
 											console.error(
 												"Error while decryption:",
@@ -352,9 +362,10 @@ export default function ViewMyPasswords() {
 										}
 									})();
 								} else {
-									console.log(
-										"Could not find any locally stored passwords, try loading from the cloud instead!"
-									);
+									if (debug)
+										console.log(
+											"Could not find any locally stored passwords, try loading from the cloud instead!"
+										);
 								}
 							}}
 						>
@@ -386,9 +397,11 @@ export default function ViewMyPasswords() {
 											!userPassword ||
 											passwordStrength < 3
 										)
-											return console.log(
-												"Invalid Password!"
-											);
+											return debug
+												? console.log(
+														"Invalid Password!"
+												  )
+												: null;
 										if (passwordManagerSetup) {
 											(async () => {
 												try {
@@ -406,9 +419,10 @@ export default function ViewMyPasswords() {
 																getPasswordFromLocalStorage()
 															);
 														if (!validPassword) {
-															console.log(
-																"Invalid Password!"
-															);
+															if (debug)
+																console.log(
+																	"Invalid Password!"
+																);
 															return;
 														}
 														prevPasswords =
@@ -418,14 +432,16 @@ export default function ViewMyPasswords() {
 														await getPasswordsFromCloud(
 															userPassword
 														);
-													console.log(
-														"cloudPasswords:",
-														cloudPasswords
-													);
-													if (!cloudPasswords[0]) {
+													if (debug)
 														console.log(
-															"Could not Load the passwords from the cloud!"
+															"cloudPasswords:",
+															cloudPasswords
 														);
+													if (!cloudPasswords[0]) {
+														if (debug)
+															console.log(
+																"Could not Load the passwords from the cloud!"
+															);
 														return;
 													}
 													setUserPasswordValid(true);
@@ -445,7 +461,7 @@ export default function ViewMyPasswords() {
 													);
 												}
 											})();
-										} else
+										} else if (debug)
 											console.log(
 												"Need to initialize the password manager first!"
 											);
@@ -479,7 +495,7 @@ function EditableInput({ value = "", onInputChange = () => {} }) {
 				setPassword(e.value);
 			}}
 			onValueCommit={(e) => {
-				console.log(e);
+				if (debug) console.log(e);
 				onInputChange(password);
 			}}
 		>

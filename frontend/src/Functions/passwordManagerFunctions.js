@@ -37,15 +37,15 @@ export async function savePasswordsLocally(
 	let salt, iv;
 	if (useLocalStorage) {
 		const encryptedPasswords = getPasswordFromLocalStorage();
-		console.log("encryptedPasswords:");
-		console.log(encryptedPasswords);
+		if (debug) console.log("encryptedPasswords:");
+		if (debug) console.log(encryptedPasswords);
 		[salt, iv] = await getSaltAndIV(
 			encryptedPasswords,
 			Number.parseInt(process.env.REACT_APP_SALT_LENGTH),
 			Number.parseInt(process.env.REACT_APP_IV_LENGTH)
 		);
-		console.log("salt, iv:");
-		console.log(salt, iv);
+		if (debug) console.log("salt, iv:");
+		if (debug) console.log(salt, iv);
 	} else [salt, iv] = [givenSalt, givenIV];
 	const newPassword = await encryptDataAESGCM(
 		password,
@@ -53,8 +53,8 @@ export async function savePasswordsLocally(
 		salt,
 		iv
 	);
-	console.log("newPasswords:");
-	console.log(newPassword);
+	if (debug) console.log("newPasswords:");
+	if (debug) console.log(newPassword);
 	addPasswordToLocalStorage(newPassword);
 }
 
@@ -66,8 +66,8 @@ export async function syncPasswordsToCloud(
 	iv
 ) {
 	try {
-		console.log("salt, iv:");
-		console.log(salt, iv);
+		if (debug) console.log("salt, iv:");
+		if (debug) console.log(salt, iv);
 		const newPassword = useLocalStorage
 			? getPasswordFromLocalStorage()
 			: await encryptDataAESGCM(
@@ -79,8 +79,8 @@ export async function syncPasswordsToCloud(
 		const passwords = await encryptData([newPassword], debug).then((data) =>
 			encodeURIComponent(data)
 		);
-		console.log("passwords:");
-		console.log(passwords);
+		if (debug) console.log("passwords:");
+		if (debug) console.log(passwords);
 		const passwordsSynced = await fetch(
 			backendUrl.replace(/\/$/g, "") + "/sync-my-passwords",
 			{
@@ -93,7 +93,7 @@ export async function syncPasswordsToCloud(
 			}
 		);
 		if (passwordsSynced.status === 200) return true;
-		console.log(passwordsSynced);
+		if (debug) console.log(passwordsSynced);
 		return false;
 	} catch (error) {
 		console.error("Error while Syncing Passwords to Cloud:", error);
@@ -153,9 +153,9 @@ export function getSaltAndIV(encryptedData, saltLength, ivLength) {
 	const salt = combined.slice(0, saltLength);
 	const iv = combined.slice(saltLength, saltLength + ivLength);
 
-	console.log("salt and iv in getSaltAndIV:");
-	console.log(salt);
-	console.log(iv);
+	if (debug) console.log("salt and iv in getSaltAndIV:");
+	if (debug) console.log(salt);
+	if (debug) console.log(iv);
 
 	return [salt, iv];
 }
@@ -181,7 +181,7 @@ export async function initializePasswordManager(password) {
 		salt,
 		iv
 	);
-	console.log(encryptedPassword);
+	if (debug) console.log(encryptedPassword);
 	addPasswordToLocalStorage(encryptedPassword);
 	return true;
 }
@@ -190,21 +190,22 @@ export async function checkPasswordAndParsePasswords(
 	password,
 	encryptedPasswords
 ) {
-	console.log("encryptedPasswords: ", encryptedPasswords);
-	console.log("password: ", password);
+	if (debug) console.log("encryptedPasswords: ", encryptedPasswords);
+	if (debug) console.log("password: ", password);
 	try {
-		console.log(
-			"iv length: ",
-			Number.parseInt(process.env.REACT_APP_IV_LENGTH)
-		);
+		if (debug)
+			console.log(
+				"iv length: ",
+				Number.parseInt(process.env.REACT_APP_IV_LENGTH)
+			);
 		const decryptedPasswords = await decryptDataAESGCM(
 			password,
 			encryptedPasswords,
 			Number.parseInt(process.env.REACT_APP_SALT_LENGTH),
 			Number.parseInt(process.env.REACT_APP_IV_LENGTH)
 		);
-		console.log("decryptedPasswords:");
-		console.log(decryptedPasswords);
+		if (debug) console.log("decryptedPasswords:");
+		if (debug) console.log(decryptedPasswords);
 		const passwords = JSON.parse(decryptedPasswords);
 		return [true, passwords];
 	} catch (error) {

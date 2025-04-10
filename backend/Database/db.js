@@ -479,7 +479,7 @@ async function markPasswordManagerInitialized(username) {
 					passwords: JSON.stringify({}),
 					initialized: true,
 				});
-			console.log("Initialized a Password Manager!");
+			if (debug) console.log("Initialized a Password Manager!");
 			return 200;
 		}
 		if (debug) console.log("markPasswordManagerInitialized error:");
