@@ -26,7 +26,7 @@ export default function App() {
 				)
 			)
 				return;
-			await fetch(
+			const validUser = await fetch(
 				backendUrl +
 					(backendUrl.endsWith("/") ? "" : "/") +
 					"check-valid-user",
