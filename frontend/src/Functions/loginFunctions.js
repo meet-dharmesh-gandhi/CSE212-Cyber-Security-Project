@@ -1,5 +1,5 @@
 import { encryptData } from "./cryptoFunctions";
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { debug } from "../constants/Mode";
 
 export async function loginOrSignUp(credentials, backendUrl, mode = "login") {
 	const encryptedData = await encryptData(credentials, debug);
@@ -8,9 +8,7 @@ export async function loginOrSignUp(credentials, backendUrl, mode = "login") {
 		console.log("base64:", encryptedData, "encodedData:", encodedData);
 	if (debug) console.log("in8!");
 	const result = await fetch(
-		backendUrl +
-			(backendUrl.endsWith("/") ? "" : "/") +
-			(mode === "login" ? "get-user" : "add-user"),
+		backendUrl + (mode === "login" ? "/get-user" : "/add-user"),
 		{
 			method: "POST",
 			headers: {
@@ -35,10 +33,7 @@ export async function loginOrSignUpUsingEmail(email, backendUrl, mode) {
 	if (debug) console.log("base64:", encryptedData);
 	if (debug) console.log("in8!");
 	const result = await fetch(
-		backendUrl +
-			(backendUrl.endsWith("/") ? "" : "/") +
-			(mode === "login" ? "get" : "add") +
-			"-user-via-email",
+		backendUrl + (mode === "login" ? "/get" : "/add") + "-user-via-email",
 		{
 			method: "POST",
 			headers: {

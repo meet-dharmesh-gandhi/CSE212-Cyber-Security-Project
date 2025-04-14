@@ -9,6 +9,7 @@ const {
 	DatabaseQueryError,
 	UserCredentialsValidationError,
 	InvalidCredentialsError,
+	UserNotFoundError,
 } = require("./Errors/Errors.js");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -23,11 +24,25 @@ const {
 	RSADecryptMiddleware,
 	parseJWT,
 	formatJSONObject,
+	getReadableDate,
 } = require("./Functions/utility-functions.js");
+const upload = require("./Database/multer.js");
+const streamifier = require("streamifier");
 
 const app = express();
 dotenv.config();
 db.connectToMongoDB();
+
+const { cloudinary } = require("./Database/cloudinary.js");
+const { frontendUrl, backendUrl } = require("./Constants/Urls.js");
+const { debug } = require("./Constants/Mode.js");
+const logs = require("./Models/logs.js");
+
+cloudinary.config({
+	cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+	api_key: process.env.CLOUDINARY_API_KEY,
+	api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const transporter = nodemailer.createTransport({
 	service: "gmail",
@@ -36,26 +51,14 @@ const transporter = nodemailer.createTransport({
 		pass: "hyit kgjl iavt qehi",
 	},
 });
-const frontendUrl =
-	process.env.ENV === "Production"
-		? process.env.PRODUCTION_CLIENT_URL
-		: process.env.DEV_CLIENT_URL;
-const backendUrl =
-	process.env.ENV === "Production"
-		? process.env.PRODUCTION_SERVER_URL
-		: process.env.DEV_SERVER_URL;
+
 const JWT_SECRET_KEY = process.env.JWT_SECRET;
 if (!JWT_SECRET_KEY) throw new ServerError("Could not find JWT_SECRET_KEY");
 
 app.use(express.json());
 app.use(
 	cors({
-		origin: [
-			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/"),
-			frontendUrl.endsWith("/")
-				? frontendUrl.slice(0, frontendUrl.length - 1)
-				: frontendUrl,
-		],
+		origin: [frontendUrl, frontendUrl + "/"],
 		credentials: true,
 	})
 );
@@ -63,8 +66,6 @@ app.use(cookieParser());
 app.use(RSADecryptMiddleware);
 
 const port = 9000;
-const requireInfo = ["username", "password", "email", "name"];
-const debug = !(process.env.ENV === "Production");
 
 //=============================
 //=============================
@@ -105,6 +106,10 @@ app.post("/get-user", async (req, res) => {
 	try {
 		let { data } = req.body;
 		if (debug) console.log(data);
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		let [username, password] = [];
 		try {
 			[username, password] = JSON.parse(data);
@@ -126,6 +131,14 @@ app.post("/get-user", async (req, res) => {
 					"authToken",
 					token,
 					createCookieSettings(process.env.ENV === "Production")
+				);
+				await db.addLogToDatabase(
+					username,
+					"Successful Login",
+					JSON.stringify({
+						date: getReadableDate(),
+						IpDetails: ipData,
+					})
 				);
 				return res.status(200).send({
 					status: "success",
@@ -164,6 +177,14 @@ app.post("/get-user", async (req, res) => {
 					);
 					if (debug) console.log("mail data");
 					if (debug) console.table(mailData);
+					await db.addLogToDatabase(
+						username,
+						"Blocked Login Attempt",
+						JSON.stringify({
+							date: getReadableDate(),
+							IpDetails: ipData,
+						})
+					);
 				} catch (error) {
 				} finally {
 					return res.status(500).send({
@@ -250,7 +271,7 @@ app.post("/add-user", async (req, res) => {
 			);
 		}
 	} catch (error) {
-		console.error("/get-user:", error);
+		console.error("/add-user:", error);
 		return res.status(error.statusCode).json({
 			status: "error",
 			data: error.message,
@@ -264,6 +285,10 @@ app.post("/get-user-via-email", async (req, res) => {
 	try {
 		let { data } = req.body;
 		if (debug) console.log(data);
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		let [email] = [];
 		try {
 			[email] = JSON.parse(data);
@@ -280,17 +305,23 @@ app.post("/get-user-via-email", async (req, res) => {
 					token,
 					createCookieSettings(process.env.ENV === "Production")
 				);
+				await db.addLogToDatabase(
+					result.username,
+					"Successful Email Login",
+					JSON.stringify({
+						date: getReadableDate(),
+						IpDetails: ipData,
+					})
+				);
 				return res.status(200).send({
 					status: "success",
 					data: result.username,
 					exists: true,
 				});
-			} else if (result.status === "OK") {
-				return res.status(500).send({
-					status: "error",
-					data: "User does not exist",
-					exists: false,
-				});
+			} else {
+				throw new UserNotFoundError(
+					"User does not exist in the Database!"
+				);
 			}
 		} catch (error) {
 			throw new DatabaseQueryError(
@@ -484,9 +515,7 @@ app.get("/send-reset-password-alert", async (req, res) => {
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
 				: ipData.data
-		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your password\nLink: ${
-			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/")
-		}verify-token?token=${token}`;
+		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your password\nLink: ${frontendUrl}/verify-token?token=${token}`;
 		const [mailStatusCode, mailData] = await sendEmail(
 			transporter,
 			email,
@@ -536,9 +565,7 @@ app.post("/send-reset-email-alert", async (req, res) => {
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
 				: ipData.data
-		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your email\nLink: ${
-			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/")
-		}verify-token?token=${token}`;
+		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your email\nLink: ${frontendUrl}/verify-token?token=${token}`;
 		const [mailStatusCode, mailData] = await sendEmail(
 			transporter,
 			email,
@@ -588,9 +615,7 @@ app.get("/send-reset-username-alert", async (req, res) => {
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
 				: ipData.data
-		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your email\nLink: ${
-			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/")
-		}verify-token?token=${token}`;
+		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to reset your email\nLink: ${frontendUrl}/verify-token?token=${token}`;
 		const [mailStatusCode, mailData] = await sendEmail(
 			transporter,
 			email,
@@ -637,9 +662,7 @@ app.get("/send-delete-account-alert", async (req, res) => {
 			typeof ipData.data === "object"
 				? formatJSONObject(ipData.data)
 				: ipData.data
-		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to delete your account\nLink: ${
-			frontendUrl + (frontendUrl.endsWith("/") ? "" : "/")
-		}verify-token?token=${token}`;
+		}\nIf you have not initiated the request, you don't need to take any action and can close this mail. But if the request was initiated by you, click on the link below to verify the request and continue to delete your account\nLink: ${frontendUrl}/verify-token?token=${token}`;
 		const [mailStatusCode, mailData] = await sendEmail(
 			transporter,
 			email,
@@ -737,6 +760,10 @@ app.post("/verify-otp", async (req, res) => {
 
 app.post("/reset-password", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
 		if (debug) console.log("parsedToken:", parsedToken);
@@ -784,11 +811,27 @@ app.post("/reset-password", async (req, res) => {
 				newPasswordHash,
 				"passwordHash"
 			);
+			await db.addLogToDatabase(
+				username,
+				"Successful Password Reset",
+				JSON.stringify({
+					date: getReadableDate(),
+					IpDetails: ipData,
+				})
+			);
 			if (passwordReset.reset) return res.sendStatus(200);
 			throw new DatabaseQueryError(
 				"Unknown database error while resetting password!"
 			);
 		} else {
+			await db.addLogToDatabase(
+				username,
+				"Failed Password Reset",
+				JSON.stringify({
+					date: getReadableDate(),
+					IpDetails: ipData,
+				})
+			);
 			throw new InvalidCredentialsError(
 				"Old password and current password do not match!"
 			);
@@ -803,6 +846,10 @@ app.post("/reset-password", async (req, res) => {
 
 app.post("/reset-email", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		if (debug) console.log("In reset-email");
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
@@ -849,8 +896,24 @@ app.post("/reset-email", async (req, res) => {
 				token,
 				createCookieSettings(process.env.ENV === "Production")
 			);
+			await db.addLogToDatabase(
+				username,
+				"Successful Email Reset",
+				JSON.stringify({
+					date: getReadableDate(),
+					IpDetails: ipData,
+				})
+			);
 			return res.sendStatus(200);
 		}
+		await db.addLogToDatabase(
+			username,
+			"Failed Email Reset",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		if (debug) console.log("resetEmail:");
 		if (debug) console.table(resetEmail);
 		return res.sendStatus(500);
@@ -864,6 +927,10 @@ app.post("/reset-email", async (req, res) => {
 
 app.post("/reset-username", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		if (debug) console.log("In reset-username");
 		const token = req.cookies.authToken;
 		const parsedToken = parseJWT(token);
@@ -912,8 +979,24 @@ app.post("/reset-username", async (req, res) => {
 				token,
 				createCookieSettings(process.env.ENV === "Production")
 			);
+			await db.addLogToDatabase(
+				username,
+				"Successful Username Reset",
+				JSON.stringify({
+					date: getReadableDate(),
+					IpDetails: ipData,
+				})
+			);
 			return res.sendStatus(200);
 		}
+		await db.addLogToDatabase(
+			username,
+			"Failed Username Reset",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		if (debug) console.log("resetUsername:");
 		if (debug) console.table(resetUsername);
 		return res.sendStatus(500);
@@ -971,6 +1054,10 @@ app.get("/delete-user", async (req, res) => {
 
 app.post("/initialize-password-manager", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		if (!req.cookies.authToken)
 			return res
 				.status(400)
@@ -984,8 +1071,24 @@ app.post("/initialize-password-manager", async (req, res) => {
 		}
 		const passwordManagerInitialized =
 			await db.markPasswordManagerInitialized(username);
+		await db.addLogToDatabase(
+			username,
+			"Successfully Initialized Password Manager",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		return res.sendStatus(passwordManagerInitialized);
 	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed Password Manager Initialization",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		console.error("/initialize-password-manager:", error);
 		res.status(error.statusCode ?? 500).json({
 			status: "error",
@@ -997,6 +1100,10 @@ app.post("/initialize-password-manager", async (req, res) => {
 
 app.put("/sync-my-passwords", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		if (!req.cookies.authToken)
 			return res
 				.status(400)
@@ -1021,8 +1128,24 @@ app.put("/sync-my-passwords", async (req, res) => {
 			username,
 			passwordsString
 		);
+		await db.addLogToDatabase(
+			username,
+			"Successful Password Sync",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		res.sendStatus(passwordsStored);
 	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed Password Sync Attempt",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		res.status(error.statusCode ?? 500).json({
 			status: "error",
 			data: error.message,
@@ -1033,6 +1156,10 @@ app.put("/sync-my-passwords", async (req, res) => {
 
 app.get("/get-passwords", async (req, res) => {
 	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
 		if (!req.cookies.authToken)
 			return res
 				.status(400)
@@ -1043,14 +1170,30 @@ app.get("/get-passwords", async (req, res) => {
 			[username] = JSON.parse(data);
 		} catch (error) {
 			console.error(
-				"Error while parsing JSON Object in /sync-my-passwords:",
+				"Error while parsing JSON Object in /get-passwords:",
 				error
 			);
 			throw new ServerError("Could not retrieve the credentials sent!");
 		}
 		const [status, passwords] = await db.getPasswordsFromDatabase(username);
+		await db.addLogToDatabase(
+			username,
+			"Successful Password View",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		res.status(status).json({ passwords });
 	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed Password View",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
 		res.status(error.statusCode ?? 500).json({
 			status: "error",
 			data: error.message,
@@ -1089,6 +1232,232 @@ app.get("/password-manager-initialized", async (req, res) => {
 			status: "error",
 			data: error.message,
 			exists: false,
+		});
+	}
+});
+
+app.post("/save-file", upload.any(), async (req, res) => {
+	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
+		if (!req.cookies.authToken || req.files.length <= 0) {
+			console.log(req.cookies.authToken);
+			console.log("req.files.length <= 0", req.files.length <= 0);
+			console.log(req.files);
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token or Files not found!" });
+		}
+		if (debug) console.log("auth token found...");
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const results = [];
+		const info = [];
+		for (const file of req.files) {
+			const name = file.originalname;
+			const meta = JSON.parse(req.body[name]);
+			if (debug) console.log("Processing:", name, "...");
+			const uploadResult = await new Promise((res, rej) => {
+				const stream = cloudinary.uploader.upload_stream(
+					{
+						resource_type: "raw",
+						public_id: "files/" + name,
+					},
+					(err, result) => (err ? rej(err) : res(result))
+				);
+				streamifier.createReadStream(file.buffer).pipe(stream);
+			});
+
+			results.push({
+				status: "Success",
+				data: `${file.originalname}.${meta.extension}: ${uploadResult.secure_url}`,
+			});
+
+			info.push({
+				username,
+				fileName: file.originalname,
+				extension: meta.extension,
+				iv: meta.iv,
+				salt: meta.salt,
+				cloudinaryUrl: uploadResult.secure_url,
+				size: meta.size,
+			});
+
+			console.log(
+				"got file name and extension and url",
+				file.originalname,
+				meta.extension,
+				uploadResult.secure_url
+			);
+		}
+
+		await db.addLogToDatabase(
+			username,
+			"Successful File Upload",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+
+		await db.uploadFileLogsToDatabase(info);
+
+		res.status(200).json({
+			status: "success",
+			data: JSON.stringify(results),
+		});
+	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed File Upload",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+		console.error("Error in save-file:", error);
+		res.status(500).send({
+			status: "error",
+			data: "Error While Uploading File!",
+		});
+	}
+});
+
+app.get("/get-user-files", async (req, res) => {
+	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
+		if (!req.cookies.authToken) {
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token or Files not found!" });
+		}
+		if (debug) console.log("auth token found...");
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const userFiles = await db.getUserFiles(username);
+		await db.addLogToDatabase(
+			username,
+			"Successful Files View",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+		res.status(200).send({
+			status: "success",
+			data: JSON.stringify(userFiles),
+		});
+	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed Files View",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+		console.error("Error in /get-user-files:", error);
+		res.status(500).send({
+			status: "error",
+			data: error.message ?? "Error while getting user files!",
+		});
+	}
+});
+
+app.delete("/delete-user-files", async (req, res) => {
+	try {
+		const [ipStatusCode, ipData] = await getIpAddress(req);
+		if (ipStatusCode !== 200 && !debug) {
+			throw new ServerError("Invalid IP Address.");
+		}
+		if (!req.cookies.authToken) {
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		}
+		if (debug) console.log("auth token found...");
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		if (debug) console.log(req.body);
+		const { fileName, cloudinaryUrl } = req.body;
+		if (!fileName || !cloudinaryUrl)
+			return res.status(400).send({
+				status: "error",
+				data: "file name or cloudinary url missing",
+			});
+		const deleteFile = await db.deleteFileFromCloudinary(
+			username,
+			fileName,
+			cloudinaryUrl
+		);
+		await db.addLogToDatabase(
+			username,
+			"Successful File Deletion",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+		res.status(200).send(deleteFile);
+	} catch (error) {
+		await db.addLogToDatabase(
+			username,
+			"Failed File Deletion",
+			JSON.stringify({
+				date: getReadableDate(),
+				IpDetails: ipData,
+			})
+		);
+		console.error("Error in /delete-user-files:", error);
+		res.status(500).send({
+			status: "error",
+			data: error.message ?? "Error while getting user files!",
+		});
+	}
+});
+
+app.get("/view-my-activity", async (req, res) => {
+	try {
+		if (!req.cookies.authToken) {
+			return res
+				.status(400)
+				.send({ status: "error", data: "Token not found!" });
+		}
+		if (debug) console.log("auth token found...");
+		const data = parseJWT(req.cookies.authToken);
+		let username;
+		try {
+			[username] = JSON.parse(data);
+		} catch (error) {
+			throw new ServerError("Could not retrieve the credentials sent!");
+		}
+		const userActivity = await db.getUserActivity(username);
+		res.status(200).send(userActivity);
+	} catch (error) {
+		console.error("Error in /view-my-activity:", error);
+		res.status(500).send({
+			status: "error",
+			data: error.message ?? "Error while getting user files!",
 		});
 	}
 });

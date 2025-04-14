@@ -19,16 +19,8 @@ import { MdOutlinePermIdentity, MdEmail, MdDelete } from "react-icons/md";
 import { FaPowerOff } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { encryptData } from "../Functions/cryptoFunctions";
-
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
 export default function UserProfileSidebar({ setSelected = () => {} }) {
 	const [showLogoutScreen, setShowLogoutScreen] = useState(false);
@@ -38,7 +30,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 	useEffect(() => {
 		(async () => {
 			const [fetched, data] = await fetch(
-				backendUrl.replace(/\/$/g, "") + "/get-cookie-data",
+				backendUrl + "/get-cookie-data",
 				{
 					method: "GET",
 					credentials: "include",
@@ -285,18 +277,13 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 		if (!startPolling) return;
 		let elapsedTime = 0;
 		const interval = setInterval(async () => {
-			const approved = await fetch(
-				`${backendUrl}${
-					backendUrl.endsWith("/") ? "" : "/"
-				}check-token`,
-				{
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			).then((data) => {
+			const approved = await fetch(`${backendUrl}/check-token`, {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}).then((data) => {
 				if (data.status === 200) return true;
 				else return false;
 			});
@@ -304,16 +291,13 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 			if (approved) {
 				if (debug) console.log("approved!");
 				setStartPolling(false);
-				const userDeleted = await fetch(
-					backendUrl.replace(/\/$/g, "") + "/delete-user",
-					{
-						method: "GET",
-						credentials: "include",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				).then((data) => (data.status === 200 ? true : false));
+				const userDeleted = await fetch(backendUrl + "/delete-user", {
+					method: "GET",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}).then((data) => (data.status === 200 ? true : false));
 				if (userDeleted) navigate("/login");
 				else if (debug) console.log("user deletion failed!");
 				clearInterval(interval);
@@ -356,10 +340,7 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 										setEnterOTP(false);
 										const alerted = await fetch(
 											backendUrl +
-												(backendUrl.endsWith("/")
-													? ""
-													: "/") +
-												"send-delete-account-alert",
+												"/send-delete-account-alert",
 											{
 												method: "GET",
 												headers: {
@@ -398,11 +379,7 @@ function DeleteUserDisplay({ showDialog, setShowDialog }) {
 											onClick={async () => {
 												setLoading(true);
 												const otpCreated = await fetch(
-													`${backendUrl}${
-														backendUrl.endsWith("/")
-															? ""
-															: "/"
-													}create-otp`,
+													`${backendUrl}/create-otp`,
 													{
 														method: "GET",
 														credentials: "include",
@@ -510,9 +487,7 @@ function OTPInputBox({
 									pinRef.current.value.trim(),
 								]);
 								const otpCorrect = await fetch(
-									backendUrl +
-										(backendUrl.endsWith("/") ? "" : "/") +
-										"verify-otp",
+									backendUrl + "/verify-otp",
 									{
 										method: "POST",
 										headers: {
@@ -593,11 +568,7 @@ function LogoutUserDisplay({ showDialog, setShowDialog }) {
 										size="lg"
 										onClick={async () => {
 											await fetch(
-												`${backendUrl}${
-													backendUrl.endsWith("/")
-														? ""
-														: "/"
-												}logout`,
+												`${backendUrl}/logout`,
 												{
 													method: "GET",
 													credentials: "include",

@@ -5,16 +5,8 @@ import {
 	generateIV,
 	generateSalt,
 } from "./cryptoFunctions";
-
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
 export function addPasswordToLocalStorage(password) {
 	localStorage.setItem(
@@ -81,17 +73,14 @@ export async function syncPasswordsToCloud(
 		);
 		if (debug) console.log("passwords:");
 		if (debug) console.log(passwords);
-		const passwordsSynced = await fetch(
-			backendUrl.replace(/\/$/g, "") + "/sync-my-passwords",
-			{
-				method: "PUT",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ data: passwords }),
-			}
-		);
+		const passwordsSynced = await fetch(backendUrl + "/sync-my-passwords", {
+			method: "PUT",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ data: passwords }),
+		});
 		if (passwordsSynced.status === 200) return true;
 		if (debug) console.log(passwordsSynced);
 		return false;
@@ -103,13 +92,10 @@ export async function syncPasswordsToCloud(
 
 export async function getPasswordsFromCloud(password) {
 	try {
-		const cloudPasswords = await fetch(
-			backendUrl.replace(/\/$/g, "") + "/get-passwords",
-			{
-				method: "GET",
-				credentials: "include",
-			}
-		).then((data) => data.json());
+		const cloudPasswords = await fetch(backendUrl + "/get-passwords", {
+			method: "GET",
+			credentials: "include",
+		}).then((data) => data.json());
 		if (debug) console.log("cloudPasswords:", cloudPasswords);
 		if (!cloudPasswords.passwords)
 			throw new Error("Invalid Response Received from the Server!");
@@ -165,7 +151,7 @@ export async function initializePasswordManager(password) {
 	// set an iv and salt
 	// add a {} to the local storage, encrypt it
 	const markPasswordManagerInitialized = await fetch(
-		backendUrl.replace(/\/$/g, "") + "/initialize-password-manager",
+		backendUrl + "/initialize-password-manager",
 		{
 			method: "POST",
 			credentials: "include",

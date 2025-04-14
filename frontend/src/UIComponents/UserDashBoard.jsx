@@ -3,18 +3,16 @@ import "../Styles/UserDashBoard.css";
 import Navbar from "./Navbar";
 import MyActivity from "./MyActivity";
 import ProtectMyResources from "./ProtectMyResources";
-import AttackSomeonesResources from "./AttackSomeonesResources";
 import ViewMyPasswords from "./ViewMyPasswords";
 import UserProfile from "./UserProfile";
 
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { debug } from "../constants/Mode";
 
 export default function UserDashBoard({ mode = 1 }) {
 	const pages = useMemo(
 		() => [
 			<MyActivity />,
 			<ProtectMyResources />,
-			<AttackSomeonesResources />,
 			<ViewMyPasswords />,
 			<UserProfile />,
 		],

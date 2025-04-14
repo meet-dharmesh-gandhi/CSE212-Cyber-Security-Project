@@ -1,28 +1,26 @@
-import {
-	Accordion,
-	Span,
-	Box,
-	IconButton,
-	Center,
-	List,
-} from "@chakra-ui/react";
-import { TiTick } from "react-icons/ti";
-import { MdCancel } from "react-icons/md";
-import { PiMonitorDuotone } from "react-icons/pi";
-import { FaLocationDot, FaCity } from "react-icons/fa6";
-import React from "react";
+import { Accordion, Span, Box, Center, Text, VStack } from "@chakra-ui/react";
+import React, { useCallback, useEffect, useState } from "react";
 import "../Styles/MyActivity.css";
+import { backendUrl } from "../constants/Urls";
 
 export default function MyActivity() {
-	const items = [
-		{
-			value: "a",
-			title: "First Item",
-			text: <Activity />,
-		},
-		{ value: "b", title: "Second Item", text: <Activity /> },
-		{ value: "c", title: "Third Item", text: <Activity /> },
-	];
+	const [myActivity, setMyActivity] = useState([]);
+
+	const getMyActivity = useCallback(async () => {
+		const fetchedActivity = await fetch(backendUrl + "/view-my-activity", {
+			method: "get",
+			credentials: "include",
+		}).then((data) => data.json());
+		return fetchedActivity;
+	}, []);
+
+	useEffect(() => {
+		(async () => {
+			const activity = await getMyActivity();
+			setMyActivity(activity);
+		})();
+	}, []);
+
 	return (
 		<Box
 			margin="2rem 2rem"
@@ -33,69 +31,75 @@ export default function MyActivity() {
 		>
 			<Accordion.Root
 				multiple
-				defaultValue={["a"]}
 				size="lg"
 				variant="enclosed"
+				defaultValue={[0]}
 			>
-				{items.map((item, index) => (
-					<Accordion.Item key={index} value={item.value}>
-						<Accordion.ItemTrigger>
-							<Span flex="1" color="white">
-								{item.title}
-							</Span>
-							<Accordion.ItemIndicator />
-						</Accordion.ItemTrigger>
-						<Accordion.ItemContent>
-							<Accordion.ItemBody color="white">
-								{item.text}
-							</Accordion.ItemBody>
-						</Accordion.ItemContent>
-					</Accordion.Item>
-				))}
+				{myActivity.map((activity, index) => {
+					if (!activity.activityDescription || !activity.activityType)
+						return null;
+					const { date, IpDetails } = JSON.parse(
+						activity.activityDescription
+					);
+					return (
+						<Accordion.Item key={index} value={index}>
+							<Accordion.ItemTrigger>
+								<Span flex="1" color="white">
+									{activity.activityType}
+								</Span>
+								<Accordion.ItemIndicator />
+							</Accordion.ItemTrigger>
+							<Accordion.ItemContent>
+								<Accordion.ItemBody>
+									<Center
+										width="100%"
+										display="flex"
+										flexDirection="column"
+										gap="2rem"
+									>
+										<Box>
+											<Center
+												width="100%"
+												display="flex"
+												flexDirection="column"
+											>
+												<Text>Date & Time:</Text>
+												<Text>{date}</Text>
+											</Center>
+										</Box>
+										<Box>
+											<Center
+												width="100%"
+												display="flex"
+												flexDirection="column"
+											>
+												<Text>Activity IP Details</Text>
+												<VStack gap="0.5rem">
+													{Object.entries(
+														IpDetails.data
+													).map((ele, ind) => (
+														<Text
+															key={
+																index +
+																"ip-addr" +
+																ind
+															}
+														>
+															{ele[0] +
+																" : " +
+																ele[1]}
+														</Text>
+													))}
+												</VStack>
+											</Center>
+										</Box>
+									</Center>
+								</Accordion.ItemBody>
+							</Accordion.ItemContent>
+						</Accordion.Item>
+					);
+				})}
 			</Accordion.Root>
-		</Box>
-	);
-}
-
-function Activity() {
-	return (
-		<Box>
-			<Center>
-				<List.Root variant="plain" align="center" gap="2">
-					<List.Item>
-						<List.Indicator asChild>
-							<PiMonitorDuotone />
-						</List.Indicator>
-						IP Address: 8.8.8.8
-					</List.Item>
-					<List.Item>
-						<List.Indicator asChild>
-							<FaCity />
-						</List.Indicator>
-						City: Ahmedabad
-					</List.Item>
-					<List.Item>
-						<List.Indicator asChild>
-							<FaLocationDot />
-						</List.Indicator>
-						Latitude and Longitude: some numbers
-					</List.Item>
-				</List.Root>
-			</Center>
-			<Span
-				className="flex justify align padding"
-				style={{
-					"--justify": "space-between",
-					"--padding": "0px 5em",
-				}}
-			>
-				<IconButton colorPalette="green">
-					<TiTick />
-				</IconButton>
-				<IconButton colorPalette="red">
-					<MdCancel />
-				</IconButton>
-			</Span>
 		</Box>
 	);
 }

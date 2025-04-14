@@ -18,6 +18,12 @@ const {
 } = require("../Functions/utility-functions.js");
 const otps = require("../Models/otps.js");
 const passwordManager = require("../Models/passwordManager.js");
+const files = require("../Models/files.js");
+const { cloudinary } = require("./cloudinary.js");
+const {
+	extractCloudinaryPublicId,
+} = require("../Functions/cloudinary-functions.js");
+const logs = require("../Models/logs.js");
 // import mongoose from "mongoose";
 const debug = !(process.env.ENV === "Production");
 
@@ -559,6 +565,63 @@ async function getPasswordsFromDatabase(username) {
 	}
 }
 
+async function uploadFileLogsToDatabase(logs) {
+	const savedFilesLogged = await files.files.insertMany(logs);
+	if (savedFilesLogged.length <= 0)
+		throw new DatabaseQueryError(
+			"Error while writing file logs to the database!"
+		);
+}
+
+async function getUserFiles(username) {
+	const userFileDetails = await files.files.find({ username });
+	return userFileDetails;
+}
+
+async function deleteFileFromCloudinary(username, fileName, cloudinaryUrl) {
+	const fileDeletedFromCloudinary = await cloudinary.uploader.destroy(
+		extractCloudinaryPublicId(cloudinaryUrl),
+		{ resource_type: "raw" },
+		(err, result) => {
+			if (err)
+				throw new DatabaseQueryError(
+					"Error while deleting from Cloudinary!"
+				);
+			else console.log("Deleted file from cloudinary!");
+		}
+	);
+	const fileDeleted = await files.files.deleteOne({
+		username,
+		fileName,
+		cloudinaryUrl,
+	});
+	if (!fileDeleted.acknowledged)
+		throw new DatabaseQueryError(
+			"Unable to delete the file from the database!"
+		);
+	return {
+		status: "success",
+		data: fileDeleted.deletedCount,
+	};
+}
+
+async function addLogToDatabase(username, activityType, activityDescription) {
+	const logged = await logs.logs.insertOne({
+		username,
+		activityType,
+		activityDescription,
+	});
+	return true;
+}
+
+async function getUserActivity(username) {
+	const userActivity = await logs.logs
+		.find({ username }, { activityType: 1, activityDescription: 1 })
+		.sort({ _id: -1 })
+		.limit(30);
+	return userActivity;
+}
+
 module.exports = {
 	connectToMongoDB,
 	addUser,
@@ -579,4 +642,9 @@ module.exports = {
 	addPasswordsToDatabase,
 	checkIfPasswordManagerInitialized,
 	getPasswordsFromDatabase,
+	uploadFileLogsToDatabase,
+	getUserFiles,
+	deleteFileFromCloudinary,
+	addLogToDatabase,
+	getUserActivity,
 };

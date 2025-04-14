@@ -15,16 +15,8 @@ import {
 import { PasswordInput } from "../components/ui/password-input";
 import React, { useEffect, useRef, useState } from "react";
 import { encryptData } from "../Functions/cryptoFunctions";
-
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
 export default function UserProfileSelectedDisplay({ selected = 0 }) {
 	const toDisplay = [
@@ -57,18 +49,13 @@ function ResetUserNameDisplay() {
 		if (!startPolling) return;
 		let elapsedTime = 0;
 		const interval = setInterval(async () => {
-			const approved = await fetch(
-				`${backendUrl}${
-					backendUrl.endsWith("/") ? "" : "/"
-				}check-token`,
-				{
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			).then((data) => {
+			const approved = await fetch(`${backendUrl}/check-token`, {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}).then((data) => {
 				if (data.status === 200) return true;
 				else return false;
 			});
@@ -80,9 +67,7 @@ function ResetUserNameDisplay() {
 					userNameInputs[1].current.value,
 				]);
 				const usernameReset = await fetch(
-					`${backendUrl}${
-						backendUrl.endsWith("/") ? "" : "/"
-					}reset-username`,
+					`${backendUrl}/reset-username`,
 					{
 						method: "POST",
 						credentials: "include",
@@ -138,9 +123,7 @@ function ResetUserNameDisplay() {
 							) {
 								setLoading(true);
 								const otpCreated = await fetch(
-									`${backendUrl}${
-										backendUrl.endsWith("/") ? "" : "/"
-									}create-otp`,
+									`${backendUrl}/create-otp`,
 									{
 										method: "GET",
 										credentials: "include",
@@ -185,18 +168,13 @@ function ResetUserNameDisplay() {
 
 async function sendResetUsernameEmail(setLoading, setStartPolling) {
 	setLoading(true);
-	const alerted = await fetch(
-		backendUrl +
-			(backendUrl.endsWith("/") ? "" : "/") +
-			"send-reset-username-alert",
-		{
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			credentials: "include",
-		}
-	).then((data) => data.status === 200);
+	const alerted = await fetch(backendUrl + "/send-reset-username-alert", {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		credentials: "include",
+	}).then((data) => data.status === 200);
 	if (alerted) {
 		setStartPolling(true);
 		setLoading(true);
@@ -208,21 +186,16 @@ async function sendResetUsernameEmail(setLoading, setStartPolling) {
 async function sendResetEmailEmail(setLoading, emailInputs, setStartPolling) {
 	setLoading(true);
 	const email2 = await encryptData([emailInputs[1].current.value]);
-	const alerted = await fetch(
-		backendUrl +
-			(backendUrl.endsWith("/") ? "" : "/") +
-			"send-reset-email-alert",
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			credentials: "include",
-			body: JSON.stringify({
-				data: encodeURIComponent(email2),
-			}),
-		}
-	).then((data) => data.status === 200);
+	const alerted = await fetch(backendUrl + "/send-reset-email-alert", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		credentials: "include",
+		body: JSON.stringify({
+			data: encodeURIComponent(email2),
+		}),
+	}).then((data) => data.status === 200);
 	if (alerted) {
 		setStartPolling(true);
 		setLoading(true);
@@ -241,18 +214,13 @@ function ResetEmailDisplay() {
 		if (!startPolling) return;
 		let elapsedTime = 0;
 		const interval = setInterval(async () => {
-			const approved = await fetch(
-				`${backendUrl}${
-					backendUrl.endsWith("/") ? "" : "/"
-				}check-token`,
-				{
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			).then((data) => {
+			const approved = await fetch(`${backendUrl}/check-token`, {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}).then((data) => {
 				if (data.status === 200) return true;
 				else return false;
 			});
@@ -260,21 +228,16 @@ function ResetEmailDisplay() {
 			if (approved) {
 				if (debug) console.log("approved!");
 				const data = await encryptData([emailInputs[1].current.value]);
-				const emailReset = await fetch(
-					`${backendUrl}${
-						backendUrl.endsWith("/") ? "" : "/"
-					}reset-email`,
-					{
-						method: "POST",
-						credentials: "include",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							data: encodeURIComponent(data),
-						}),
-					}
-				).then((data) => {
+				const emailReset = await fetch(`${backendUrl}/reset-email`, {
+					method: "POST",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						data: encodeURIComponent(data),
+					}),
+				}).then((data) => {
 					if (data.status === 200) return true;
 					else return false;
 				});
@@ -320,9 +283,7 @@ function ResetEmailDisplay() {
 								if (debug) console.log("method 1");
 								setLoading(true);
 								const otpCreated = await fetch(
-									`${backendUrl}${
-										backendUrl.endsWith("/") ? "" : "/"
-									}create-otp`,
+									`${backendUrl}/create-otp`,
 									{
 										method: "GET",
 										credentials: "include",
@@ -386,18 +347,13 @@ function ResetPasswordDisplay() {
 		if (!startPolling) return;
 		let elapsedTime = 0;
 		const interval = setInterval(async () => {
-			const approved = await fetch(
-				`${backendUrl}${
-					backendUrl.endsWith("/") ? "" : "/"
-				}check-token`,
-				{
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			).then((data) => {
+			const approved = await fetch(`${backendUrl}/check-token`, {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}).then((data) => {
 				if (data.status === 200) return true;
 				else return false;
 			});
@@ -405,18 +361,13 @@ function ResetPasswordDisplay() {
 			if (approved) {
 				if (debug) console.log("approved!");
 				setStartPolling(false);
-				const otpCreated = await fetch(
-					`${backendUrl}${
-						backendUrl.endsWith("/") ? "" : "/"
-					}create-otp`,
-					{
-						method: "GET",
-						credentials: "include",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
+				const otpCreated = await fetch(`${backendUrl}/create-otp`, {
+					method: "GET",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				});
 				if (otpCreated.status !== 200)
 					return console.log("Unknown Error in OTP Creation");
 				setLoading(false);
@@ -468,9 +419,7 @@ function ResetPasswordDisplay() {
 						onClick={async () => {
 							setLoading(true);
 							const alerted = await fetch(
-								backendUrl +
-									(backendUrl.endsWith("/") ? "" : "/") +
-									"send-reset-password-alert",
+								backendUrl + "/send-reset-password-alert",
 								{
 									method: "GET",
 									headers: {
@@ -514,9 +463,7 @@ function ResetPasswordDisplay() {
 								newPass,
 							]);
 							const passwordReset = await fetch(
-								backendUrl +
-									(backendUrl.endsWith("/") ? "" : "/") +
-									"reset-password",
+								backendUrl + "/reset-password",
 								{
 									method: "POST",
 									credentials: "include",
@@ -589,9 +536,7 @@ function OTPInputBox({
 									pinRef.current.value.trim(),
 								]);
 								const otpCorrect = await fetch(
-									backendUrl +
-										(backendUrl.endsWith("/") ? "" : "/") +
-										"verify-otp",
+									backendUrl + "/verify-otp",
 									{
 										method: "POST",
 										headers: {

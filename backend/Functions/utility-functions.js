@@ -6,6 +6,7 @@ const {
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const otps = require("../Models/otps");
+const { debug } = require("../Constants/Mode");
 
 const apisToIgnore = [
 	"/view-cookies",
@@ -14,7 +15,6 @@ const apisToIgnore = [
 	"/helper",
 	"/proxy",
 ];
-const debug = !(process.env.ENV === "Production");
 
 function RSADecryptMiddleware(req, res, next) {
 	if (debug) console.log("Path:", req.path);
@@ -233,6 +233,18 @@ function generateOTP() {
 	return otp;
 }
 
+function getReadableDate() {
+	return new Date(Date.now()).toLocaleString("en-IN", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
+}
+
 module.exports = {
 	RSADecryptMiddleware,
 	decodeIncomingData,
@@ -246,4 +258,5 @@ module.exports = {
 	parseJWT,
 	generateOTP,
 	formatJSONObject,
+	getReadableDate,
 };

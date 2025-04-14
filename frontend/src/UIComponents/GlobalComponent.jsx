@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { frontendUrl, backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
 const routesToIgnore = ["/login", "/signup", "/verify-token"];
 
 export default function GlobalComponent() {
@@ -24,18 +17,13 @@ export default function GlobalComponent() {
 			)
 		)
 			return;
-		fetch(
-			backendUrl +
-				(backendUrl.endsWith("/") ? "" : "/") +
-				"check-valid-user",
-			{
-				method: "GET",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
-		)
+		fetch(backendUrl + "/check-valid-user", {
+			method: "GET",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		})
 			.then((data) => {
 				if (data.status !== 200) {
 					throw new Error("User is not authenticated!");
@@ -43,10 +31,7 @@ export default function GlobalComponent() {
 				setCheckIfSet(true);
 			})
 			.catch((err) => {
-				window.location.href =
-					frontendUrl +
-					(frontendUrl.endsWith("/") ? "" : "/") +
-					"login";
+				window.location.href = frontendUrl + "/login";
 			});
 	}, [location.pathname]);
 
@@ -60,28 +45,20 @@ export default function GlobalComponent() {
 				)
 			)
 				return;
-			fetch(
-				backendUrl +
-					(backendUrl.endsWith("/") ? "" : "/") +
-					"check-valid-user",
-				{
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			)
+			fetch(backendUrl + "/check-valid-user", {
+				method: "GET",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			})
 				.then((data) => {
 					if (data.status !== 200) {
 						throw new Error("User is not authenticated!");
 					}
 				})
 				.catch((err) => {
-					window.location.href =
-						frontendUrl +
-						(frontendUrl.endsWith("/") ? "" : "/") +
-						"login";
+					window.location.href = frontendUrl + "/login";
 				});
 		}, 16 * 60 * 1000);
 		return () => clearTimeout(timeout);

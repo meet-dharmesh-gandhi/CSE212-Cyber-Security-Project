@@ -1,19 +1,18 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button, Text, Menu, Portal, IconButton } from "@chakra-ui/react";
-import { HiDotsHorizontal } from "react-icons/hi";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button, Text, IconButton } from "@chakra-ui/react";
 import { FaUserCog } from "react-icons/fa";
 
 const pages = [
 	["My Activity", "/my-activity"],
 	["Protect My Resources", "/protect-resources"],
-	["Attack Someones Resources", "/attack-resources"],
 	["View My Passwords", "/view-passwords"],
 ];
 
 export default function Navbar({ toSelect = 0 }) {
 	const [currentlySelected, setCurrentlySelected] = useState(toSelect);
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	useEffect(() => {
 		const reqIndex =
@@ -24,7 +23,7 @@ export default function Navbar({ toSelect = 0 }) {
 							ele[1].toLowerCase() === window.location.pathname
 				  );
 		setCurrentlySelected(reqIndex === -1 ? 4 : reqIndex);
-	}, [window.location.href]);
+	}, [location.pathname]);
 
 	return (
 		<nav className="navbar w100vw">

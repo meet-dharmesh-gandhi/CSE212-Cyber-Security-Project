@@ -1,8 +1,4 @@
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { debug } from "../constants/Mode";
 
 export async function encryptData(data, debug = false) {
 	const chunkSize = Number.parseInt(
@@ -157,6 +153,75 @@ export async function decryptDataAESGCM(
 
 		if (debug) console.log("Decrypted:", decrypted);
 		return new TextDecoder().decode(decrypted);
+	} catch (error) {
+		if (debug) console.error("Error while decrypting: ", error);
+	}
+}
+
+export async function encryptFilesAESGCM(password, file) {
+	console.log(password);
+	console.log(file);
+	const salt = generateSalt(process.env.REACT_APP_SALT_LENGTH);
+	const iv = generateIV(process.env.REACT_APP_IV_LENGTH);
+	const key = await doPBKDF2(password, salt);
+	const fileBuffer = await file.arrayBuffer();
+
+	if (debug) console.log("password, plaintext, salt, iv, key:");
+	if (debug) console.log(password);
+	if (debug) console.log(salt);
+	if (debug) console.log(iv);
+	if (debug) console.log(key);
+
+	const encrypted = await window.crypto.subtle.encrypt(
+		{ name: "AES-GCM", iv: iv },
+		key,
+		fileBuffer
+	);
+
+	if (debug) console.log("encrypted:");
+	if (debug) console.log(encrypted);
+
+	const encryptedFileBlob = new Blob([new Uint8Array(encrypted)], {
+		type: "application/octet-stream",
+	});
+
+	return {
+		encryptedFile: encryptedFileBlob,
+		salt: btoa(String.fromCharCode(...salt)),
+		iv: btoa(String.fromCharCode(...iv)),
+	};
+}
+
+export async function decryptFilesAESGCM(
+	password,
+	encryptedFile,
+	saltLength,
+	ivLength
+) {
+	try {
+		const combinedBlob = await encryptedFile.arrayBuffer();
+		const combined = Uint8Array(combinedBlob);
+
+		const salt = combined.slice(0, saltLength);
+		const iv = combined.slice(saltLength, saltLength + ivLength);
+		const ciphertext = combined.slice(saltLength + ivLength);
+
+		if (debug) console.log(salt);
+		if (debug) console.log(iv);
+		if (debug) console.log(ciphertext);
+
+		const key = await doPBKDF2(password, salt);
+
+		if (debug) console.log("Got key:", key);
+
+		const decrypted = await window.crypto.subtle.decrypt(
+			{ name: "AES-GCM", iv: iv },
+			key,
+			ciphertext
+		);
+
+		if (debug) console.log("Decrypted:", decrypted);
+		return new Blob([decrypted]);
 	} catch (error) {
 		if (debug) console.error("Error while decrypting: ", error);
 	}

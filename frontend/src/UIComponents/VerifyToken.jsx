@@ -9,16 +9,7 @@ import {
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { backendUrl } from "../constants/Urls";
 
 export default function VerifyToken() {
 	const navigate = useNavigate();
@@ -32,7 +23,7 @@ export default function VerifyToken() {
 		);
 		setToken(newToken);
 		if (!newToken) navigate("/login");
-	});
+	}, [navigate]);
 	return (
 		<Box className="w100vw h100vh">
 			<Center className="w100 h100">
@@ -61,11 +52,7 @@ export default function VerifyToken() {
 										size="lg"
 										onClick={async () => {
 											const tokenValid = await fetch(
-												`${backendUrl}${
-													backendUrl.endsWith("/")
-														? ""
-														: "/"
-												}verify-token/${token}`
+												`${backendUrl}/verify-token/${token}`
 											).then((data) => {
 												if (data.status === 200)
 													setUpdated("updated");

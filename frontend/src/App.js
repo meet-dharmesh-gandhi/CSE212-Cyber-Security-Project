@@ -25,16 +25,12 @@ export default function App() {
 					element={<UserDashBoard mode={2} />}
 				/>
 				<Route
-					path="/attack-resources"
+					path="/view-passwords"
 					element={<UserDashBoard mode={3} />}
 				/>
 				<Route
-					path="/view-passwords"
-					element={<UserDashBoard mode={4} />}
-				/>
-				<Route
 					path="/view-profile"
-					element={<UserDashBoard mode={5} />}
+					element={<UserDashBoard mode={4} />}
 				/>
 				<Route path="/verify-token" element={<VerifyToken />} />
 				<Route path="*" element={<MissingRoute />} />

@@ -26,13 +26,8 @@ import {
 	savePasswordsLocally,
 	syncPasswordsToCloud,
 } from "../Functions/passwordManagerFunctions";
-
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-
-const debug = !(process.env.REACT_APP_ENV === "Production");
+import { backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
 export default function ViewMyPasswords() {
 	const [passwords, setPasswords] = useState({});
@@ -93,8 +88,7 @@ export default function ViewMyPasswords() {
 	useEffect(() => {
 		(async () => {
 			const passwordManagerInitialized = await fetch(
-				backendUrl.replace(/\/$/g, "") +
-					"/password-manager-initialized",
+				backendUrl + "/password-manager-initialized",
 				{
 					method: "GET",
 					credentials: "include",

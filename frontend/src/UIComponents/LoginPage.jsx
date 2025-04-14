@@ -6,31 +6,18 @@ import {
 	loginOrSignUpUsingEmail,
 } from "../Functions/loginFunctions";
 import "../Styles/LoginPage.css";
-
-const frontendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_CLIENT_URL
-		: process.env.REACT_APP_DEV_CLIENT_URL;
-const backendUrl =
-	process.env.REACT_APP_ENV === "Production"
-		? process.env.REACT_APP_SERVER_URL
-		: process.env.REACT_APP_DEV_SERVER_URL;
-const debug = !(process.env.REACT_APP_ENV === "Production");
-// const debug = false;
+import { frontendUrl, backendUrl } from "../constants/Urls";
+import { debug } from "../constants/Mode";
 
 export default function LoginPage({ mode = "login" }) {
 	const configObject = useMemo(() => {
 		return {
-			serverUrl: backendUrl + (backendUrl.endsWith("/") ? "" : "/"),
+			serverUrl: backendUrl + "/",
 			providers: {
 				google: {
 					clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
 					clientSecret: process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
-					redirectUri:
-						frontendUrl +
-						(frontendUrl.endsWith("/") ? "" : "/") +
-						mode +
-						"/",
+					redirectUri: frontendUrl + "/" + mode + "/",
 					scope: "email profile openid",
 					serverEndPoint: "auth",
 				},
@@ -116,17 +103,10 @@ export default function LoginPage({ mode = "login" }) {
 						<button
 							onClick={() => {
 								if (debug)
-									fetch(
-										backendUrl +
-											(backendUrl.endsWith("/")
-												? ""
-												: "/") +
-											"view-cookies",
-										{
-											method: "GET",
-											credentials: "include",
-										}
-									).then(() =>
+									fetch(backendUrl + "/view-cookies", {
+										method: "GET",
+										credentials: "include",
+									}).then(() =>
 										console.log(
 											"Check for cookies printed in your console"
 										)
@@ -138,24 +118,16 @@ export default function LoginPage({ mode = "login" }) {
 						<button
 							onClick={() => {
 								if (debug)
-									fetch(
-										backendUrl +
-											(backendUrl.endsWith("/")
-												? ""
-												: "/") +
-											"set-cookies",
-										{
-											method: "POST",
-											headers: {
-												"Content-Type":
-													"application/json",
-											},
-											credentials: "include",
-											body: JSON.stringify({
-												value: "cookie-value-2",
-											}),
-										}
-									).then(() =>
+									fetch(backendUrl + "/set-cookies", {
+										method: "POST",
+										headers: {
+											"Content-Type": "application/json",
+										},
+										credentials: "include",
+										body: JSON.stringify({
+											value: "cookie-value-2",
+										}),
+									}).then(() =>
 										console.log(
 											"Check for cookies printed in your console"
 										)
