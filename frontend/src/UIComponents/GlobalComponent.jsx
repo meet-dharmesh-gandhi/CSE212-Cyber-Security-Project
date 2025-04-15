@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { frontendUrl, backendUrl } from "../constants/Urls";
 import { debug } from "../constants/Mode";
 
-const routesToIgnore = ["/login", "/signup", "/verify-token"];
+const routesToIgnore = ["/login", "/signup", "/verify-token", "/kushal-login"];
 
 export default function GlobalComponent() {
 	const [checkIfSet, setCheckIfSet] = useState(false);

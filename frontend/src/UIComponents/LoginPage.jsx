@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import * as anyAuth from "any-auth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -8,6 +8,20 @@ import {
 import "../Styles/LoginPage.css";
 import { frontendUrl, backendUrl } from "../constants/Urls";
 import { debug } from "../constants/Mode";
+import {
+	Box,
+	Button,
+	Center,
+	HStack,
+	Input,
+	Separator,
+	Text,
+	VStack,
+} from "@chakra-ui/react";
+import {
+	PasswordInput,
+	PasswordStrengthMeter,
+} from "../components/ui/password-input";
 
 export default function LoginPage({ mode = "login" }) {
 	const configObject = useMemo(() => {
@@ -25,10 +39,80 @@ export default function LoginPage({ mode = "login" }) {
 		};
 	}, [mode]);
 
-	const username = useRef("");
-	const password = useRef("");
-	const email = useRef("");
+	const onLoginButtonClick = (e) => {
+		if (debug) console.log("in!");
+		(async (e) => {
+			if (debug) console.log("in2!");
+
+			if (!e.isTrusted) {
+				alert("Script Attack!");
+				return;
+			}
+
+			if (debug) console.log("in3!");
+
+			const credentials = [
+				username,
+				password,
+				...(mode === "login" ? [] : [email]),
+			];
+			if (debug) console.log(process.env.REACT_APP_PUBLIC_KEY);
+			if (debug) console.log("in4!");
+			const result = await loginOrSignUp(credentials, backendUrl, mode);
+			if (debug) console.log("result: ");
+			if (debug) console.table(result);
+			if (result.status === "error" && mode === "login") {
+				navigate("/signup");
+			} else if (result.status !== "error") {
+				navigate("/home");
+			} else {
+				alert("Invalid Username or Password");
+			}
+		})(e);
+	};
+
+	const redirectToAnotherPage = (e) => {
+		if (!e.isTrusted) {
+			alert("Script Attack!");
+			return;
+		}
+		navigate(mode === "login" ? "/signup" : "/login");
+	};
+
+	const onGoogleLoginButtonClick = (e) => {
+		if (!e.isTrusted) {
+			alert("Script Attack!");
+			return;
+		}
+		anyAuth.handleLoginButtonClick("google", document.body);
+	};
+
+	const [username, setUsername] = useState("");
+	const [password, setPassword] = useState("");
+	const [email, setEmail] = useState("");
+	const [passwordStrength, setPasswordStrength] = useState(0);
 	const navigate = useNavigate();
+
+	const checkPasswordStrength = useCallback(() => {
+		if (!password || password.length < 0) return 0;
+		if (password.length < 8) return 1;
+		const [hasUpper, hasLower, hasNums, hasSpecial] = [
+			/[A-Z]/.test(password),
+			/[a-z]/.test(password),
+			/[0-9]/.test(password),
+			/[!@#$%^&*(),.?":{}|<>]/.test(password),
+		];
+		if (!hasUpper || !hasLower) return 2;
+		if (hasNums && !hasSpecial) return 3;
+		if (hasSpecial && hasNums) return 4;
+		if (hasNums) return 3;
+		return 2;
+	}, [password]);
+
+	useEffect(() => {
+		if (debug) console.log(checkPasswordStrength());
+		setPasswordStrength(checkPasswordStrength());
+	}, [password, checkPasswordStrength]);
 
 	useEffect(() => {
 		anyAuth.setConfig(configObject, {});
@@ -54,214 +138,145 @@ export default function LoginPage({ mode = "login" }) {
 	}, [configObject, mode, navigate]);
 
 	return (
-		<div
-			className="w100vw h100vh flex justify align login-page-bg"
-			style={{ "--gap": "20px", "--bg": "#ffffff" }}
-		>
-			<div
-				className="login-container fx-col flex justify align gap bg padding b-r br pa w h margin"
-				style={{
-					"--gap": "40px",
-					"--bg": "#ffffff70",
-					"--padding": "30px",
-					"--b-r": "20px",
-					"--br-c": "#dddddd",
-					"--br-w": "2px",
-					"--pa-l": "50vw",
-					"--w": "40vw",
-					"--h": "auto",
-					"--margin": "2rem 2rem 2rem 0rem",
-				}}
-			>
-				<div
-					className="inputs-container fx-col flex justify align gap"
-					style={{ "--gap": "20px" }}
+		<Box width="100vw" height="100vh" bgColor="beige" overflow="auto">
+			<Center width="100%" height="100%" padding="2rem">
+				<Box
+					className="animate-gradient"
+					padding="0.5rem"
+					borderRadius="1rem"
 				>
-					<InputBox
-						num="0"
-						labelText="Username:"
-						componentRef={username}
-					/>
-					<InputBox
-						type="password"
-						num="1"
-						labelText="Password:"
-						componentRef={password}
-					/>
-					{mode === "login" ? (
-						<></>
-					) : (
-						<InputBox
-							num="2"
-							labelText="Email:"
-							componentRef={email}
-						/>
-					)}
-				</div>
-				{debug ? (
-					<div>
-						<button
-							onClick={() => {
-								if (debug)
-									fetch(backendUrl + "/view-cookies", {
-										method: "GET",
-										credentials: "include",
-									}).then(() =>
-										console.log(
-											"Check for cookies printed in your console"
-										)
-									);
-							}}
-						>
-							Check Cookies
-						</button>
-						<button
-							onClick={() => {
-								if (debug)
-									fetch(backendUrl + "/set-cookies", {
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-										},
-										credentials: "include",
-										body: JSON.stringify({
-											value: "cookie-value-2",
-										}),
-									}).then(() =>
-										console.log(
-											"Check for cookies printed in your console"
-										)
-									);
-							}}
-						>
-							Set Cookies
-						</button>
-					</div>
-				) : (
-					<></>
-				)}
-				<button
-					className="login-button flex justify align padding b-r bg font-color"
-					style={{
-						"--padding": "10px 25px",
-						"--b-r": "10px",
-						"--bg": "#7d7",
-						"--color": "#000",
-					}}
-					onClick={(e) => {
-						if (debug) console.log("in!");
-						(async (e) => {
-							if (debug) console.log("in2!");
-
-							if (!e.isTrusted) {
-								alert("Script Attack!");
-								return;
-							}
-
-							if (debug) console.log("in3!");
-
-							const credentials = [
-								username.current.value,
-								password.current.value,
-								...(mode === "login"
-									? []
-									: [email.current.value]),
-							];
-							if (debug)
-								console.log(process.env.REACT_APP_PUBLIC_KEY);
-							if (debug) console.log("in4!");
-							const result = await loginOrSignUp(
-								credentials,
-								backendUrl,
-								mode
-							);
-							if (debug) console.log("result: ");
-							if (debug) console.table(result);
-							if (result.status === "error" && mode === "login") {
-								navigate("/signup");
-							} else if (result.status !== "error") {
-								navigate("/home");
-							} else {
-								alert("Invalid Username or Password");
-							}
-						})(e);
-					}}
-				>
-					{mode === "login" ? "Login" : "Sign Up"}
-				</button>
-				<div className="w100 pr">
-					<hr
-						noShade
-						className="w100 br"
-						style={{
-							"--br-c": "#333333",
-							"--br-w": "2px",
-						}}
-					/>
-					<p
-						className="pa w h padding b-r tr-x bg font-color"
-						style={{
-							"--w": "fit-content",
-							"--h": "fit-content",
-							"--pa-t": "-100%",
-							"--pa-l": "50%",
-							"--tr-x": "-50%",
-							"--bg": "#444",
-							"--color": "#fff",
-							"--padding": "0px 10px",
-						}}
+					<Box
+						bgColor="black"
+						width="100%"
+						maxWidth="700px"
+						padding="2rem"
+						borderRadius="0.7rem"
+						display="flex"
+						flexDirection="column"
+						gap="2rem"
 					>
-						OR
-					</p>
-				</div>
-				<button
-					className="flex padding b-r bg"
-					style={{
-						"--padding": "10px 20px",
-						"--b-r": "10px",
-						"--bg": "#4c7dff",
-					}}
-					onClick={(e) => {
-						if (!e.isTrusted) {
-							alert("Script Attack!");
-							return;
-						}
-						anyAuth.handleLoginButtonClick("google", document.body);
-					}}
-				>
-					{mode === "login" ? "Login" : "Sign Up"} Using Google!
-				</button>
-			</div>
-		</div>
-	);
-}
-
-export function InputBox({ type, num, labelText, componentRef }) {
-	return (
-		<div
-			className="input-box flex justify align gap-col fs bg padding b-r"
-			style={{
-				"--gap": "100px",
-				"--fs": "larger",
-				"--bg": "#ddddddd",
-				"--padding": "20px 40px",
-				"--b-r": "10px",
-			}}
-		>
-			<label htmlFor={"input-box" + (num ?? "0")}>
-				{labelText ?? type ?? "text"}
-			</label>
-			<input
-				id={"input-box" + (num ?? "0")}
-				type={type ?? "text"}
-				ref={componentRef}
-				className="bg padding font-color"
-				style={{
-					"--bg": "#ffffff",
-					"--padding": "3px 5px",
-					"--color": "#000000",
-				}}
-			/>
-		</div>
+						<Text fontSize="4xl" width="100%" textAlign="center">
+							{mode === "login" ? "Login" : "Sign Up"}
+						</Text>
+						<VStack gap="2rem" width="100%">
+							<Box
+								display="grid"
+								gridTemplateColumns="1fr 2fr"
+								width="100%"
+								gap="2rem"
+							>
+								<Text>Enter Your Username</Text>
+								<Input
+									variant="subtle"
+									onChange={(e) =>
+										setUsername(e.target.value)
+									}
+								/>
+							</Box>
+							<Box
+								display="grid"
+								gridTemplateColumns="1fr 2fr"
+								width="100%"
+								gap="2rem"
+							>
+								<Text>Enter Your Password</Text>
+								<VStack width="100%" gap="1em">
+									<PasswordInput
+										variant="subtle"
+										onChange={(e) =>
+											setPassword(e.target.value)
+										}
+									/>
+									<Box width="100%">
+										<PasswordStrengthMeter
+											value={passwordStrength}
+										/>
+									</Box>
+								</VStack>
+							</Box>
+							{mode === "login" ? (
+								<></>
+							) : (
+								<Box
+									display="grid"
+									gridTemplateColumns="1fr 2fr"
+									width="100%"
+									gap="2rem"
+								>
+									<Text>Enter Your Email</Text>
+									<Input
+										variant="subtle"
+										onChange={(e) =>
+											setEmail(e.target.value)
+										}
+									/>
+								</Box>
+							)}
+							<HStack gap="2rem">
+								<Button
+									bgColor="green.400"
+									onClick={(e) => onLoginButtonClick(e)}
+								>
+									<Text fontSize="1.3em">
+										{mode === "login" ? "Login" : "Sign Up"}
+									</Text>
+								</Button>
+								<VStack
+									gap="0"
+									height="150%"
+									position="relative"
+								>
+									<Separator
+										flex="1"
+										borderColor="white"
+										height="1rem"
+										orientation="vertical"
+										position="absolute"
+										top="-1rem"
+									/>
+									<Text>OR</Text>
+									<Separator
+										flex="1"
+										borderColor="white"
+										height="1rem"
+										orientation="vertical"
+										position="absolute"
+										bottom="-1rem"
+									/>
+								</VStack>
+								<Button
+									bgColor="green.400"
+									onClick={(e) => redirectToAnotherPage(e)}
+								>
+									<Text fontSize="1.3em">
+										{mode === "login" ? "Sign Up" : "Login"}
+									</Text>
+								</Button>
+							</HStack>
+							<HStack width="100%">
+								<Separator
+									flex="1"
+									borderColor="white"
+									width="100%"
+								/>
+								<Text flexShrink="0">OR</Text>
+								<Separator
+									flex="1"
+									borderColor="white"
+									width="100%"
+								/>
+							</HStack>
+							<Button
+								bgColor="blue.400"
+								onClick={(e) => onGoogleLoginButtonClick(e)}
+							>
+								{mode === "login" ? "Login" : "Sign Up"} With
+								Google
+							</Button>
+						</VStack>
+					</Box>
+				</Box>
+			</Center>
+		</Box>
 	);
 }

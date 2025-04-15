@@ -23,7 +23,6 @@ import { debug } from "../constants/Mode";
 import {
 	deleteFileFromCloudinary,
 	downloadFilesFromCloudinary,
-	extractCloudinaryPublicId,
 	uploadFilesToCloudinary,
 } from "../Functions/ProtectResourcesFunctions";
 import { backendUrl } from "../constants/Urls";
