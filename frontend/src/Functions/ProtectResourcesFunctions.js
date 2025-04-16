@@ -24,9 +24,6 @@ export async function uploadFilesToCloudinary(files, password) {
 
 	const status = await fetch(backendUrl + "/save-file", {
 		method: "POST",
-		headers: {
-			"Content-Type": "multipart/form-data",
-		},
 		body: formData,
 		credentials: "include",
 	}).then((data) => data.json());
