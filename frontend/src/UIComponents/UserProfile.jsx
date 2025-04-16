@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Text } from "@chakra-ui/react";
 import UserProfileSidebar from "./UserProfileSidebar";
 import UserProfileSelectedDisplay from "./UserProfileSelectedDisplay";
 
@@ -26,7 +25,10 @@ export default function UserProfile() {
 					"--padding": "10px",
 				}}
 			>
-				<UserProfileSidebar setSelected={setSelected} />
+				<UserProfileSidebar
+					setSelected={setSelected}
+					selected={selected}
+				/>
 			</div>
 			<div
 				className="bg b-r padding w"

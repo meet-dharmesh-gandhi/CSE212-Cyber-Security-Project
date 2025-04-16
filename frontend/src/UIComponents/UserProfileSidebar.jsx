@@ -22,7 +22,10 @@ import { encryptData } from "../Functions/cryptoFunctions";
 import { backendUrl } from "../constants/Urls";
 import { debug } from "../constants/Mode";
 
-export default function UserProfileSidebar({ setSelected = () => {} }) {
+export default function UserProfileSidebar({
+	setSelected = () => {},
+	selected = 0,
+}) {
 	const [showLogoutScreen, setShowLogoutScreen] = useState(false);
 	const [showDeletionScreen, setShowDeletionScreen] = useState(false);
 	const [userName, setUserName] = useState("User");
@@ -82,6 +85,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 						attached
 						className="w flex"
 						style={{ "--w": "100%" }}
+						bgColor={selected === 0 ? "gray.900" : "black"}
 					>
 						<IconButton
 							backgroundColor="blackAlpha.800"
@@ -109,6 +113,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 						attached
 						className="w flex"
 						style={{ "--w": "100%" }}
+						bgColor={selected === 1 ? "gray.900" : "black"}
 					>
 						<IconButton
 							backgroundColor="blackAlpha.800"
@@ -136,6 +141,7 @@ export default function UserProfileSidebar({ setSelected = () => {} }) {
 						attached
 						className="w flex"
 						style={{ "--w": "100%" }}
+						bgColor={selected === 2 ? "gray.900" : "black"}
 					>
 						<IconButton
 							backgroundColor="blackAlpha.800"

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { frontendUrl, backendUrl } from "../constants/Urls";
 import { debug } from "../constants/Mode";
+import Notifications from "./Notifications";
 
-const routesToIgnore = ["/login", "/signup", "/verify-token", "/kushal-login"];
+const routesToIgnore = ["/login", "/signup", "/verify-token"];
 
 export default function GlobalComponent() {
 	const [checkIfSet, setCheckIfSet] = useState(false);
@@ -63,5 +64,5 @@ export default function GlobalComponent() {
 		}, 16 * 60 * 1000);
 		return () => clearTimeout(timeout);
 	}, [checkIfSet]);
-	return <></>;
+	return <Notifications />;
 }

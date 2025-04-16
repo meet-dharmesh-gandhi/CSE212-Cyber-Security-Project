@@ -9,7 +9,7 @@ import {
 	Switch,
 	IconButton,
 } from "@chakra-ui/react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { LuUpload } from "react-icons/lu";
 import { FaFileAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
@@ -26,6 +26,7 @@ import {
 	uploadFilesToCloudinary,
 } from "../Functions/ProtectResourcesFunctions";
 import { backendUrl } from "../constants/Urls";
+import { NotificationsContext } from "../App";
 
 export default function ProtectMyResources() {
 	const [userPassword, setUserPassword] = useState("");
@@ -34,6 +35,7 @@ export default function ProtectMyResources() {
 	const [uploadFiles, setUploadFiles] = useState(true);
 	const [userFiles, setUserFiles] = useState([]);
 	const [selected, setSelected] = useState([]);
+	const { addNotification } = useContext(NotificationsContext);
 
 	const getUserFiles = useCallback(async () => {
 		const userFiles = await fetch(backendUrl + "/get-user-files", {
@@ -131,26 +133,71 @@ export default function ProtectMyResources() {
 						<Button
 							bgColor="green.400"
 							onClick={async (e) => {
-								if (!e.isTrusted) return;
-								if (files.length <= 0 && uploadFiles)
-									return console.log("No files found!");
-								if (selected.length <= 0 && !uploadFiles)
-									return console.log("No files found!");
-								if (passwordStrength < 3)
-									return console.log("Too weak password!");
-								console.log(files);
-								console.log(userPassword);
-								if (uploadFiles) {
-									const uploaded =
-										await uploadFilesToCloudinary(
-											files,
-											userPassword
+								try {
+									if (!e.isTrusted) return;
+									if (files.length <= 0 && uploadFiles) {
+										addNotification(
+											"error",
+											"No Files Found!"
 										);
-									console.log(uploaded);
-								} else {
-									downloadFilesFromCloudinary(
-										selected,
-										userPassword
+										return console.log("No files found!");
+									}
+									if (selected.length <= 0 && !uploadFiles) {
+										addNotification(
+											"error",
+											"No Files Found"
+										);
+										return console.log("No files found!");
+									}
+									if (passwordStrength < 3) {
+										addNotification(
+											"error",
+											"Too Weak Password, Try Again!"
+										);
+										return console.log(
+											"Too weak password!"
+										);
+									}
+									console.log(files);
+									console.log(userPassword);
+									if (uploadFiles) {
+										const uploaded =
+											await uploadFilesToCloudinary(
+												files,
+												userPassword
+											);
+										if (uploaded)
+											addNotification(
+												"success",
+												"Files Uploaded to Cloud!"
+											);
+										else
+											addNotification(
+												"error",
+												"Error while uploading files to Cloud, Try Again"
+											);
+										console.log(uploaded);
+									} else {
+										const error =
+											await downloadFilesFromCloudinary(
+												selected,
+												userPassword
+											);
+										if (error) {
+											addNotification(
+												"error",
+												"Invalid Password!"
+											);
+										} else
+											addNotification(
+												"success",
+												"Files Downloaded!"
+											);
+									}
+								} catch (error) {
+									addNotification(
+										"error",
+										"Invalid Password!"
 									);
 								}
 							}}

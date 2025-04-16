@@ -28,7 +28,11 @@ export async function uploadFilesToCloudinary(files, password) {
 	if (status.status && status.status === "success") {
 		console.log("File Uploaded!");
 		if (debug) console.log(status);
-	} else console.log("Error in file Uploading!");
+		return true;
+	} else {
+		console.log("Error in file Uploading!");
+		return false;
+	}
 }
 
 export async function downloadFilesFromCloudinary(files, password) {
@@ -42,6 +46,9 @@ export async function downloadFilesFromCloudinary(files, password) {
 		if (fileBlob === null || fileName === null) {
 			console.log("The file does not exist!", file.file);
 			continue;
+		}
+		if (fileBlob === "error") {
+			return fileName;
 		}
 		zip.file(fileName, fileBlob);
 	}
@@ -84,9 +91,7 @@ export async function downloadFileFromCloudinary(file, password) {
 		);
 	} catch (error) {
 		console.error("Error while decoding the data:", error);
-		throw new Error(
-			"Error while decoding the data (the password might be invalid as well)"
-		);
+		return ["error", "Invalid Password!"];
 	}
 
 	const blob = new Blob([buffer]);

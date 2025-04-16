@@ -15,7 +15,14 @@ import {
 	PasswordInput,
 	PasswordStrengthMeter,
 } from "../components/ui/password-input";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	useContext,
+} from "react";
+import { NotificationsContext } from "../App";
 import { LuCheck, LuPencilLine, LuPlus, LuX } from "react-icons/lu";
 import { MdDelete } from "react-icons/md";
 import {
@@ -36,6 +43,7 @@ export default function ViewMyPasswords() {
 	const [passwordStrength, setPasswordStrength] = useState(0);
 	const [userPasswordValid, setUserPasswordValid] = useState(false);
 	const rawCloudPasswords = useRef(null);
+	const { addNotification } = useContext(NotificationsContext);
 
 	const addPassword = (name, password) => {
 		setPasswords((prev) => ({
@@ -204,7 +212,7 @@ export default function ViewMyPasswords() {
 							bgColor="green.300"
 							width="20%"
 							borderRadius="1rem 0rem 0rem 3rem"
-							onClick={() => {
+							onClick={async () => {
 								// if (Object.entries(passwords).length === 0) return;
 								// console.log(passwords);
 								// // localStorage.setItem("passwords", JSON.stringify(passwords));
@@ -219,14 +227,37 @@ export default function ViewMyPasswords() {
 											"password, salt, iv:",
 											rawCloudPasswords
 										);
-									syncPasswordsToCloud(
-										false,
-										userPassword,
-										passwords,
-										rawCloudPasswords.current[1],
-										rawCloudPasswords.current[2]
+									addNotification(
+										"warning",
+										"No Passwords were stored locally!"
 									);
-								} else syncPasswordsToCloud();
+									const passwordsUploaded =
+										await syncPasswordsToCloud(
+											false,
+											userPassword,
+											passwords,
+											rawCloudPasswords.current[1],
+											rawCloudPasswords.current[2]
+										);
+									if (passwordsUploaded)
+										addNotification(
+											"success",
+											"Passwords were successfully stored to cloud!"
+										);
+									else
+										addNotification(
+											"error",
+											"Could not store your passwords to the cloud, Try Again!"
+										);
+								} else {
+									const passwordsSynced =
+										await syncPasswordsToCloud();
+									if (passwordsSynced)
+										addNotification(
+											"success",
+											"Local Passwords Successfully Synced to Cloud!"
+										);
+								}
 							}}
 						>
 							<Text>Sync to Cloud</Text>
@@ -246,7 +277,10 @@ export default function ViewMyPasswords() {
 							bgColor="red.300"
 							width="20%"
 							borderRadius="0rem 1rem 3rem 0rem"
-							onClick={() => {
+							onClick={async (e) => {
+								if (e.isTrusted) {
+									return;
+								}
 								// if (Object.entries(passwords).length === 0) return;
 								// console.log(passwords);
 								// // localStorage.setItem("passwords", JSON.stringify(passwords));
@@ -256,10 +290,21 @@ export default function ViewMyPasswords() {
 										console.log(
 											"passwords are in local storage!"
 										);
-									savePasswordsLocally(
-										passwords,
-										userPassword
-									);
+									try {
+										await savePasswordsLocally(
+											passwords,
+											userPassword
+										);
+										addNotification(
+											"success",
+											"Passwords Stored Locally!"
+										);
+									} catch (error) {
+										addNotification(
+											"error",
+											"Error while Storing Passwords Locally, Try Again!"
+										);
+									}
 								} else if (
 									rawCloudPasswords.current &&
 									Array.isArray(rawCloudPasswords.current) &&
@@ -274,13 +319,24 @@ export default function ViewMyPasswords() {
 											"password, salt, iv:",
 											rawCloudPasswords
 										);
-									savePasswordsLocally(
-										passwords,
-										userPassword,
-										false,
-										rawCloudPasswords.current[1],
-										rawCloudPasswords.current[2]
-									);
+									try {
+										await savePasswordsLocally(
+											passwords,
+											userPassword,
+											false,
+											rawCloudPasswords.current[1],
+											rawCloudPasswords.current[2]
+										);
+										addNotification(
+											"success",
+											"Passwords Stored Locally!"
+										);
+									} catch (error) {
+										addNotification(
+											"error",
+											"Error while Storing Passwords Locally, Try Again!"
+										);
+									}
 								}
 							}}
 						>
@@ -321,10 +377,15 @@ export default function ViewMyPasswords() {
 										// passwordManagerSetup && userPasswordValid
 										setupPasswordManagerSetup(true);
 										setUserPasswordValid(true);
-									} else
+									} else {
+										addNotification(
+											"error",
+											"Could not setup password manager!"
+										);
 										console.log(
 											"Some Error while initializing the Password Manager!"
 										);
+									}
 								} else if (
 									getPasswordFromLocalStorage() !== "{}"
 								) {
@@ -336,11 +397,15 @@ export default function ViewMyPasswords() {
 													userPassword,
 													getPasswordFromLocalStorage()
 												);
-											if (!validPassword)
+											if (!validPassword) {
+												addNotification(
+													"error",
+													"Invalid Password!"
+												);
 												console.log(
 													"Invalid Password!"
 												);
-											else {
+											} else {
 												setPasswords(passwords);
 												setUserPasswordValid(true);
 											}
@@ -385,10 +450,15 @@ export default function ViewMyPasswords() {
 										if (
 											!userPassword ||
 											passwordStrength < 3
-										)
+										) {
+											addNotification(
+												"error",
+												"Invalid Password!"
+											);
 											return console.log(
 												"Invalid Password!"
 											);
+										}
 										if (passwordManagerSetup) {
 											(async () => {
 												try {
@@ -406,6 +476,10 @@ export default function ViewMyPasswords() {
 																getPasswordFromLocalStorage()
 															);
 														if (!validPassword) {
+															addNotification(
+																"error",
+																"Invalid Password!"
+															);
 															console.log(
 																"Invalid Password!"
 															);
@@ -440,6 +514,10 @@ export default function ViewMyPasswords() {
 													rawCloudPasswords.current =
 														cloudPasswords[2];
 												} catch (error) {
+													addNotification(
+														"error",
+														"Error while getting passwords from cloud!"
+													);
 													console.error(
 														"Error while decryption:",
 														error

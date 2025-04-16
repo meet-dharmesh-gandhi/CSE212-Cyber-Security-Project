@@ -13,10 +13,11 @@ import {
 	VStack,
 } from "@chakra-ui/react";
 import { PasswordInput } from "../components/ui/password-input";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { encryptData } from "../Functions/cryptoFunctions";
 import { backendUrl } from "../constants/Urls";
 import { debug } from "../constants/Mode";
+import { NotificationsContext } from "../App";
 
 export default function UserProfileSelectedDisplay({ selected = 0 }) {
 	const toDisplay = [
@@ -44,6 +45,7 @@ function ResetUserNameDisplay() {
 	const [startPolling, setStartPolling] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [OTPReady, setOTPReady] = useState(false);
+	const { addNotification } = useContext(NotificationsContext);
 
 	useEffect(() => {
 		if (!startPolling) return;
@@ -83,6 +85,16 @@ function ResetUserNameDisplay() {
 					else return false;
 				});
 				if (debug) console.log("usernameReset:", usernameReset);
+				if (usernameReset)
+					addNotification(
+						"success",
+						"Username was Reset Successfully!"
+					);
+				else
+					addNotification(
+						"error",
+						"Error while resetting username, Try Again!"
+					);
 				setStartPolling(false);
 				setLoading(false);
 				clearInterval(interval);
@@ -132,13 +144,26 @@ function ResetUserNameDisplay() {
 										},
 									}
 								);
-								if (otpCreated.status !== 200)
+								if (otpCreated.status !== 200) {
+									addNotification(
+										"error",
+										"Error while generating OTP, Try Again!"
+									);
 									return console.log(
 										"Unknown Error in OTP Creation"
 									);
+								}
+								addNotification(
+									"success",
+									"OTP Sent Successfully!"
+								);
 								setLoading(false);
 								setOTPReady(true);
 							} else {
+								addNotification(
+									"error",
+									"You left one of the username input fields empty!"
+								);
 								if (debug) console.log("Invalid way!");
 							}
 						}}
@@ -155,9 +180,16 @@ function ResetUserNameDisplay() {
 						setOTPReady={setOTPReady}
 						onOTPCorrect={async (otp) => {
 							if (debug) console.log("OTP correct!");
+							addNotification("success", "OTP verified!");
 							setOTPReady(false);
 							sendResetUsernameEmail(setLoading, setStartPolling);
 						}}
+						onOTPIncorrect={() =>
+							addNotification(
+								"error",
+								"Invalid OTP Entered, Try Again!"
+							)
+						}
 					/>
 				}
 				padding="3rem"
@@ -183,7 +215,12 @@ async function sendResetUsernameEmail(setLoading, setStartPolling) {
 	}
 }
 
-async function sendResetEmailEmail(setLoading, emailInputs, setStartPolling) {
+async function sendResetEmailEmail(
+	setLoading,
+	emailInputs,
+	setStartPolling,
+	addNotification
+) {
 	setLoading(true);
 	const email2 = await encryptData([emailInputs[1].current.value]);
 	const alerted = await fetch(backendUrl + "/send-reset-email-alert", {
@@ -200,6 +237,7 @@ async function sendResetEmailEmail(setLoading, emailInputs, setStartPolling) {
 		setStartPolling(true);
 		setLoading(true);
 	} else {
+		addNotification("error", "Unable to send alert E-Mail, Try Again!");
 		setLoading(false);
 	}
 }
@@ -209,6 +247,7 @@ function ResetEmailDisplay() {
 	const [startPolling, setStartPolling] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [OTPReady, setOTPReady] = useState(false);
+	const { addNotification } = useContext(NotificationsContext);
 
 	useEffect(() => {
 		if (!startPolling) return;
@@ -242,6 +281,16 @@ function ResetEmailDisplay() {
 					else return false;
 				});
 				if (debug) console.log("emailReset:", emailReset);
+				if (emailReset)
+					addNotification(
+						"success",
+						"Username was Reset Successfully!"
+					);
+				else
+					addNotification(
+						"error",
+						"Error while resetting username, Try Again!"
+					);
 				setStartPolling(false);
 				setLoading(false);
 				clearInterval(interval);
@@ -292,10 +341,19 @@ function ResetEmailDisplay() {
 										},
 									}
 								);
-								if (otpCreated.status !== 200)
+								if (otpCreated.status !== 200) {
+									addNotification(
+										"error",
+										"Error while generating OTP, Try Again!"
+									);
 									return console.log(
 										"Unknown Error in OTP Creation"
 									);
+								}
+								addNotification(
+									"success",
+									"OTP Sent Successfully!"
+								);
 								setLoading(false);
 								setOTPReady(true);
 							} else if (emailInputs[1].current.value) {
@@ -303,9 +361,14 @@ function ResetEmailDisplay() {
 								sendResetEmailEmail(
 									setLoading,
 									emailInputs,
-									setStartPolling
+									setStartPolling,
+									addNotification
 								);
 							} else {
+								addNotification(
+									"error",
+									"You left one of the email input fields empty!"
+								);
 								if (debug) console.log("Invalid way!");
 							}
 						}}
@@ -322,6 +385,7 @@ function ResetEmailDisplay() {
 						setOTPReady={setOTPReady}
 						onOTPCorrect={async (otp) => {
 							if (debug) console.log("OTP correct!");
+							addNotification("success", "OTP verified!");
 							setOTPReady(false);
 							sendResetEmailEmail(
 								setLoading,
@@ -329,6 +393,12 @@ function ResetEmailDisplay() {
 								setStartPolling
 							);
 						}}
+						onOTPIncorrect={() =>
+							addNotification(
+								"error",
+								"Invalid OTP Entered, Try Again!"
+							)
+						}
 					/>
 				}
 				padding="3rem"
@@ -342,6 +412,7 @@ function ResetPasswordDisplay() {
 	const [loading, setLoading] = useState(false);
 	const [OTPReady, setOTPReady] = useState(false);
 	const passwordInputs = [useRef(null), useRef(null), useRef(null)];
+	const { addNotification } = useContext(NotificationsContext);
 
 	useEffect(() => {
 		if (!startPolling) return;
@@ -368,8 +439,14 @@ function ResetPasswordDisplay() {
 						"Content-Type": "application/json",
 					},
 				});
-				if (otpCreated.status !== 200)
+				if (otpCreated.status !== 200) {
+					addNotification(
+						"error",
+						"Error while generating OTP, Try Again!"
+					);
 					return console.log("Unknown Error in OTP Creation");
+				}
+				addNotification("success", "OTP Sent Successfully!");
 				setLoading(false);
 				setOTPReady(true);
 				clearInterval(interval);
@@ -486,9 +563,17 @@ function ResetPasswordDisplay() {
 									)
 								);
 							if (passwordReset) {
+								addNotification(
+									"success",
+									"Password Reset Successful!"
+								);
 								if (debug) console.log("User password reset!");
 								setOTPReady(false);
 							} else {
+								addNotification(
+									"error",
+									"Unable to reset password, Try Again!"
+								);
 								if (debug)
 									console.log("Password reset failed!");
 								// setOTPReady(false);
@@ -608,7 +693,7 @@ function CustomLoader() {
 	return (
 		<VStack>
 			<Spinner color="teal.600" />
-			<Text color="teal.600">Loading...</Text>
+			<Text color="teal.600">Check Your Email for Link!</Text>
 		</VStack>
 	);
 }

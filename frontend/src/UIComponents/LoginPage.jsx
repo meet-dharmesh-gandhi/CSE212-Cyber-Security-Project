@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import * as anyAuth from "any-auth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -22,6 +28,7 @@ import {
 	PasswordInput,
 	PasswordStrengthMeter,
 } from "../components/ui/password-input";
+import { NotificationsContext } from "../App";
 
 export default function LoginPage({ mode = "login" }) {
 	const configObject = useMemo(() => {
@@ -41,6 +48,13 @@ export default function LoginPage({ mode = "login" }) {
 
 	const onLoginButtonClick = (e) => {
 		if (debug) console.log("in!");
+		if (passwordStrength < 3 && mode !== "login") {
+			addNotification(
+				"warning",
+				'Password needs to be at a minimum level of "High"'
+			);
+			return;
+		}
 		(async (e) => {
 			if (debug) console.log("in2!");
 
@@ -62,11 +76,11 @@ export default function LoginPage({ mode = "login" }) {
 			if (debug) console.log("result: ");
 			if (debug) console.table(result);
 			if (result.status === "error" && mode === "login") {
-				navigate("/signup");
+				addNotification("error", result.data);
 			} else if (result.status !== "error") {
 				navigate("/home");
 			} else {
-				alert("Invalid Username or Password");
+				addNotification("error", "Username already taken!");
 			}
 		})(e);
 	};
@@ -92,6 +106,7 @@ export default function LoginPage({ mode = "login" }) {
 	const [email, setEmail] = useState("");
 	const [passwordStrength, setPasswordStrength] = useState(0);
 	const navigate = useNavigate();
+	const { addNotification } = useContext(NotificationsContext);
 
 	const checkPasswordStrength = useCallback(() => {
 		if (!password || password.length < 0) return 0;
@@ -131,11 +146,13 @@ export default function LoginPage({ mode = "login" }) {
 				);
 				if (debug)
 					console.log("result after email auth:", result, status);
-				if (status !== 200) navigate("/signup");
-				else navigate("/home");
+				if (status !== 200) {
+					addNotification("error", result.data);
+					navigate("/signup");
+				} else navigate("/home");
 			}
 		})();
-	}, [configObject, mode, navigate]);
+	}, [configObject, mode, navigate, addNotification]);
 
 	return (
 		<Box width="100vw" height="100vh" bgColor="beige" overflow="auto">
