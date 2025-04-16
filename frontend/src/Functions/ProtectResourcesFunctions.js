@@ -16,11 +16,17 @@ export async function uploadFilesToCloudinary(files, password) {
 		const [name, extension] = file.name.split(/\.(?=[^.]+$)/);
 		const size = formatBytes(file.size);
 		formData.append("files", encryptedFile, name);
-		formData.append(name, JSON.stringify({ extension, salt, iv, size }));
+		formData.append(
+			"meta_" + name,
+			JSON.stringify({ extension, salt, iv, size })
+		);
 	}
 
 	const status = await fetch(backendUrl + "/save-file", {
 		method: "POST",
+		headers: {
+			"Content-Type": "multipart/form-data",
+		},
 		body: formData,
 		credentials: "include",
 	}).then((data) => data.json());

@@ -1262,7 +1262,7 @@ app.post("/save-file", upload.any(), async (req, res) => {
 		const info = [];
 		for (const file of req.files) {
 			const name = file.originalname;
-			const meta = JSON.parse(req.body[name]);
+			const meta = JSON.parse(req.body["meta_" + name]);
 			if (debug) console.log("Processing:", name, "...");
 			const uploadResult = await new Promise((res, rej) => {
 				const stream = cloudinary.uploader.upload_stream(
