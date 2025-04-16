@@ -278,7 +278,7 @@ export default function ViewMyPasswords() {
 							width="20%"
 							borderRadius="0rem 1rem 3rem 0rem"
 							onClick={async (e) => {
-								if (e.isTrusted) {
+								if (!e.isTrusted) {
 									return;
 								}
 								// if (Object.entries(passwords).length === 0) return;

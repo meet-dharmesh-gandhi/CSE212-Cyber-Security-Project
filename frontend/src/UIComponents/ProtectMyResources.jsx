@@ -141,9 +141,8 @@ export default function ProtectMyResources() {
 											"No Files Found!"
 										);
 										if (debug)
-											return console.log(
-												"No files found!"
-											);
+											console.log("No files found!");
+										return;
 									}
 									if (selected.length <= 0 && !uploadFiles) {
 										addNotification(
@@ -151,9 +150,8 @@ export default function ProtectMyResources() {
 											"No Files Found"
 										);
 										if (debug)
-											return console.log(
-												"No files found!"
-											);
+											console.log("No files found!");
+										return;
 									}
 									if (passwordStrength < 3) {
 										addNotification(
@@ -161,9 +159,8 @@ export default function ProtectMyResources() {
 											"Too Weak Password, Try Again!"
 										);
 										if (debug)
-											return console.log(
-												"Too weak password!"
-											);
+											console.log("Too weak password!");
+										return;
 									}
 									if (debug) console.log(files);
 									if (debug) console.log(userPassword);
@@ -228,7 +225,7 @@ function ShowDownloadFilesUI({
 }) {
 	return (
 		<Box width="100%" height="100%" padding="2rem">
-			<VStack>
+			<VStack overflowX="auto">
 				{files.map((file, index) => {
 					return (
 						<Box
