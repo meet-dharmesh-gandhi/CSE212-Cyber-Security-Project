@@ -140,26 +140,33 @@ export default function ProtectMyResources() {
 											"error",
 											"No Files Found!"
 										);
-										return console.log("No files found!");
+										if (debug)
+											return console.log(
+												"No files found!"
+											);
 									}
 									if (selected.length <= 0 && !uploadFiles) {
 										addNotification(
 											"error",
 											"No Files Found"
 										);
-										return console.log("No files found!");
+										if (debug)
+											return console.log(
+												"No files found!"
+											);
 									}
 									if (passwordStrength < 3) {
 										addNotification(
 											"error",
 											"Too Weak Password, Try Again!"
 										);
-										return console.log(
-											"Too weak password!"
-										);
+										if (debug)
+											return console.log(
+												"Too weak password!"
+											);
 									}
-									console.log(files);
-									console.log(userPassword);
+									if (debug) console.log(files);
+									if (debug) console.log(userPassword);
 									if (uploadFiles) {
 										const uploaded =
 											await uploadFilesToCloudinary(
@@ -176,7 +183,7 @@ export default function ProtectMyResources() {
 												"error",
 												"Error while uploading files to Cloud, Try Again"
 											);
-										console.log(uploaded);
+										if (debug) console.log(uploaded);
 									} else {
 										const error =
 											await downloadFilesFromCloudinary(
@@ -299,13 +306,14 @@ function ShowDownloadFilesUI({
 											await deleteFileFromCloudinary(
 												file
 											);
-										console.log(deleted);
+										if (debug) console.log(deleted);
 										if (deleted) {
 											setUserFiles((prev) => {
 												const newFiles = prev.filter(
 													(ele) => file !== ele
 												);
-												console.log(newFiles);
+												if (debug)
+													console.log(newFiles);
 												return newFiles;
 											});
 										}

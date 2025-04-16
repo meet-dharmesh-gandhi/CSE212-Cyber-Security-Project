@@ -149,9 +149,10 @@ function ResetUserNameDisplay() {
 										"error",
 										"Error while generating OTP, Try Again!"
 									);
-									return console.log(
-										"Unknown Error in OTP Creation"
-									);
+									if (debug)
+										return console.log(
+											"Unknown Error in OTP Creation"
+										);
 								}
 								addNotification(
 									"success",
@@ -346,9 +347,10 @@ function ResetEmailDisplay() {
 										"error",
 										"Error while generating OTP, Try Again!"
 									);
-									return console.log(
-										"Unknown Error in OTP Creation"
-									);
+									if (debug)
+										return console.log(
+											"Unknown Error in OTP Creation"
+										);
 								}
 								addNotification(
 									"success",
@@ -444,7 +446,8 @@ function ResetPasswordDisplay() {
 						"error",
 						"Error while generating OTP, Try Again!"
 					);
-					return console.log("Unknown Error in OTP Creation");
+					if (debug)
+						return console.log("Unknown Error in OTP Creation");
 				}
 				addNotification("success", "OTP Sent Successfully!");
 				setLoading(false);
@@ -531,6 +534,10 @@ function ResetPasswordDisplay() {
 							const newPass = passwordInputs[1].current.value;
 							const newPass2 = passwordInputs[2].current.value;
 							if (newPass !== newPass2) {
+								addNotification(
+									"error",
+									"Passwords don't match!"
+								);
 								if (debug)
 									console.log("Passwords don't match!");
 								return;

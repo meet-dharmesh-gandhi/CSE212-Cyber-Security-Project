@@ -371,10 +371,10 @@ export default function ViewMyPasswords() {
 									const passwordManagerInitialized =
 										initializePasswordManager(userPassword);
 									if (passwordManagerInitialized) {
-										console.log(
-											"Password Manager Initialized!"
-										);
-										// passwordManagerSetup && userPasswordValid
+										if (debug)
+											console.log(
+												"Password Manager Initialized!"
+											);
 										setupPasswordManagerSetup(true);
 										setUserPasswordValid(true);
 									} else {
@@ -382,9 +382,10 @@ export default function ViewMyPasswords() {
 											"error",
 											"Could not setup password manager!"
 										);
-										console.log(
-											"Some Error while initializing the Password Manager!"
-										);
+										if (debug)
+											console.log(
+												"Some Error while initializing the Password Manager!"
+											);
 									}
 								} else if (
 									getPasswordFromLocalStorage() !== "{}"
@@ -402,9 +403,10 @@ export default function ViewMyPasswords() {
 													"error",
 													"Invalid Password!"
 												);
-												console.log(
-													"Invalid Password!"
-												);
+												if (debug)
+													console.log(
+														"Invalid Password!"
+													);
 											} else {
 												setPasswords(passwords);
 												setUserPasswordValid(true);
@@ -417,9 +419,14 @@ export default function ViewMyPasswords() {
 										}
 									})();
 								} else {
-									console.log(
+									addNotification(
+										"error",
 										"Could not find any locally stored passwords, try loading from the cloud instead!"
 									);
+									if (debug)
+										console.log(
+											"Could not find any locally stored passwords, try loading from the cloud instead!"
+										);
 								}
 							}}
 						>
@@ -455,9 +462,10 @@ export default function ViewMyPasswords() {
 												"error",
 												"Invalid Password!"
 											);
-											return console.log(
-												"Invalid Password!"
-											);
+											if (debug)
+												return console.log(
+													"Invalid Password!"
+												);
 										}
 										if (passwordManagerSetup) {
 											(async () => {
@@ -480,9 +488,10 @@ export default function ViewMyPasswords() {
 																"error",
 																"Invalid Password!"
 															);
-															console.log(
-																"Invalid Password!"
-															);
+															if (debug)
+																console.log(
+																	"Invalid Password!"
+																);
 															return;
 														}
 														prevPasswords =
@@ -498,9 +507,14 @@ export default function ViewMyPasswords() {
 															cloudPasswords
 														);
 													if (!cloudPasswords[0]) {
-														console.log(
-															"Could not Load the passwords from the cloud!"
+														addNotification(
+															"error",
+															"Could not load passwords from the cloud!"
 														);
+														if (debug)
+															console.log(
+																"Could not Load the passwords from the cloud!"
+															);
 														return;
 													}
 													setUserPasswordValid(true);
@@ -525,6 +539,11 @@ export default function ViewMyPasswords() {
 												}
 											})();
 										} else
+											addNotification(
+												"error",
+												"Need to initialize the password manager first!"
+											);
+										if (debug)
 											console.log(
 												"Need to initialize the password manager first!"
 											);

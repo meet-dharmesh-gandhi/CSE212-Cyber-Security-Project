@@ -159,8 +159,8 @@ export async function decryptDataAESGCM(
 }
 
 export async function encryptFilesAESGCM(password, file) {
-	console.log(password);
-	console.log(file);
+	if (debug) console.log(password);
+	if (debug) console.log(file);
 	const salt = generateSalt(process.env.REACT_APP_SALT_LENGTH);
 	const iv = generateIV(process.env.REACT_APP_IV_LENGTH);
 	const key = await doPBKDF2(password, salt);

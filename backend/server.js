@@ -1292,12 +1292,13 @@ app.post("/save-file", upload.any(), async (req, res) => {
 				size: meta.size,
 			});
 
-			console.log(
-				"got file name and extension and url",
-				file.originalname,
-				meta.extension,
-				uploadResult.secure_url
-			);
+			if (debug)
+				console.log(
+					"got file name and extension and url",
+					file.originalname,
+					meta.extension,
+					uploadResult.secure_url
+				);
 		}
 
 		await db.addLogToDatabase(

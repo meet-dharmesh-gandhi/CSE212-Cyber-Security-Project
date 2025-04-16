@@ -9,7 +9,7 @@ async function uploadFileToCloudinary(buffer, filename) {
 			},
 			(err, result) => {
 				if (err) console.error("Error while uploading to cloudinary");
-				else console.log("File uploaded to cloudinary!");
+				else if (debug) console.log("File uploaded to cloudinary!");
 			}
 		)
 		.end(buffer);
