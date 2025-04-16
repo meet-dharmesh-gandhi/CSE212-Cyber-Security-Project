@@ -1237,6 +1237,7 @@ app.get("/password-manager-initialized", async (req, res) => {
 });
 
 app.post("/save-file", upload.any(), async (req, res) => {
+	let incomingUsername;
 	try {
 		const [ipStatusCode, ipData] = await getIpAddress(req);
 		if (ipStatusCode !== 200 && !debug) {
@@ -1258,6 +1259,7 @@ app.post("/save-file", upload.any(), async (req, res) => {
 		} catch (error) {
 			throw new ServerError("Could not retrieve the credentials sent!");
 		}
+		incomingUsername = username;
 		const results = [];
 		const info = [];
 		for (const file of req.files) {
@@ -1315,7 +1317,7 @@ app.post("/save-file", upload.any(), async (req, res) => {
 		});
 	} catch (error) {
 		await db.addLogToDatabase(
-			username,
+			incomingUsername,
 			"Failed File Upload",
 			JSON.stringify({
 				date: getReadableDate(),
