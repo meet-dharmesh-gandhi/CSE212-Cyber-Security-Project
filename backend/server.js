@@ -1081,14 +1081,6 @@ app.post("/initialize-password-manager", async (req, res) => {
 		);
 		return res.sendStatus(passwordManagerInitialized);
 	} catch (error) {
-		await db.addLogToDatabase(
-			username,
-			"Failed Password Manager Initialization",
-			JSON.stringify({
-				date: getReadableDate(),
-				IpDetails: ipData,
-			})
-		);
 		console.error("/initialize-password-manager:", error);
 		res.status(error.statusCode ?? 500).json({
 			status: "error",
